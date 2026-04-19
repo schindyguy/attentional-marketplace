@@ -1,0 +1,27 @@
+-- 0004_primary_categories.sql — derive primary_category from handle categories
+UPDATE publishers SET primary_category='Marketing' WHERE name='ADWEEK';
+UPDATE publishers SET primary_category='Entertainment' WHERE name='Bustle';
+UPDATE publishers SET primary_category='Entertainment' WHERE name='BuzzFeed Inc.';
+UPDATE publishers SET primary_category='News' WHERE name='DailyMail';
+UPDATE publishers SET primary_category='Tech' WHERE name='Digital Trends';
+UPDATE publishers SET primary_category='Humor' WHERE name='Doing Things';
+UPDATE publishers SET primary_category='Small Business' WHERE name='Entrepreneur';
+UPDATE publishers SET primary_category='Health' WHERE name='Everyday Health';
+UPDATE publishers SET primary_category='Business' WHERE name='Fortune';
+UPDATE publishers SET primary_category='Lifestyle' WHERE name='Gallery Media Group';
+UPDATE publishers SET primary_category='Health & Wellness' WHERE name='Healthline Media';
+UPDATE publishers SET primary_category='Travel' WHERE name='LOST iN';
+UPDATE publishers SET primary_category='Celebrity' WHERE name='McClatchy';
+UPDATE publishers SET primary_category='Sports' WHERE name='Minute Media';
+UPDATE publishers SET primary_category='Personal Finance' WHERE name='Money';
+UPDATE publishers SET primary_category='Parenting' WHERE name='Motherly';
+UPDATE publishers SET primary_category='Entertainment' WHERE name='New York Post';
+UPDATE publishers SET primary_category='News' WHERE name='NewsExplained';
+UPDATE publishers SET primary_category='Travel' WHERE name='Only In Your State';
+UPDATE publishers SET primary_category='Film / TV Trades' WHERE name='Penske Media';
+UPDATE publishers SET primary_category='Finance' WHERE name='People Inc';
+UPDATE publishers SET primary_category='Entertainment' WHERE name='Static Media';
+UPDATE publishers SET primary_category='News' WHERE name='TIME';
+UPDATE publishers SET primary_category='News' WHERE name='The Independent';
+UPDATE publishers SET primary_category='Viral' WHERE name='Trusted Media Brands';
+UPDATE publishers SET primary_category='CPG' WHERE name='Vox Media';

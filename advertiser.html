@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attentional — Publisher Marketplace</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple: #2d4a6e;
+  --purple-light: #eef2f7;
+  --purple-mid: #4a6d9c;
+  --bg: #f3f5f8;
+  --white: #fff;
+  --text: #1a2535;
+  --muted: #7a8fa6;
+  --border: #d8e2ec;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-xs: 7px;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── NAV ── */
+nav {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.nav-logo svg { flex-shrink: 0; }
+.nav-logo-text { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+.nav-tabs { display: flex; gap: 2px; background: var(--bg); border-radius: 10px; padding: 3px; }
+.nav-tab {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  border: none;
+  background: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.nav-tab.active { background: var(--white); color: var(--purple); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.nav-right { font-size: 12px; color: var(--muted); font-weight: 500; display: none; }
+/* hide tabs inside nav on mobile; show full-width tab bar below */
+@media(max-width:639px){ .nav-tabs { display: none; } }
+@media(min-width:640px){ .nav-right { display: block; } .nav-logo-text { font-size: 17px; } nav { padding: 0 24px; height: 60px; } }
+
+/* mobile tab bar (below nav) */
+.mobile-tab-bar { display: flex; background: var(--white); border-bottom: 1px solid var(--border); padding: 8px 16px; gap: 8px; position: sticky; top: 56px; z-index: 199; }
+.mobile-tab-bar .nav-tab { flex: 1; text-align: center; }
+@media(min-width:640px){ .mobile-tab-bar { display: none; } }
+@media(min-width:1024px){ nav { padding: 0 40px; } }
+
+/* ── PAGE WRAPPER ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── SECTION ── */
+.section { padding: 20px 16px; }
+@media(min-width:640px){ .section { padding: 28px 24px; } }
+@media(min-width:1024px){ .section { padding: 32px 40px; max-width: 1300px; margin: 0 auto; } }
+
+.section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-size: 17px; font-weight: 800; color: var(--text); }
+@media(min-width:640px){ .section-title { font-size: 20px; } }
+.section-link { font-size: 13px; color: var(--purple); font-weight: 600; cursor: pointer; white-space: nowrap; margin-left: 12px; }
+.section-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ── RECOMMENDATION ENGINE ── */
+.rec-hero {
+  background: linear-gradient(135deg, #0f1e35 0%, #1a3255 100%);
+  border-radius: 20px;
+  padding: 28px 20px;
+  color: #fff;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.rec-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(74,109,156,0.4), transparent 70%);
+  border-radius: 50%;
+}
+.rec-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: 40%;
+  width: 160px; height: 160px;
+  background: radial-gradient(circle, rgba(74,109,156,0.25), transparent 70%);
+  border-radius: 50%;
+}
+.rec-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; margin-bottom: 8px; }
+.rec-title { font-size: 22px; font-weight: 900; line-height: 1.2; margin-bottom: 8px; letter-spacing: -0.5px; position: relative; z-index: 1; }
+@media(min-width:640px){ .rec-title { font-size: 28px; } }
+.rec-sub { font-size: 14px; opacity: 0.7; margin-bottom: 20px; line-height: 1.5; position: relative; z-index: 1; }
+.rec-input-row { display: flex; gap: 10px; position: relative; z-index: 1; }
+.rec-input {
+  flex: 1;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 15px;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.rec-input::placeholder { color: rgba(255,255,255,0.45); }
+.rec-input:focus { border-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.18); }
+.rec-btn {
+  background: var(--purple);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.rec-btn:hover { opacity: 0.88; }
+.rec-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Recommendation results */
+.rec-results { margin-top: 20px; display: none; }
+.rec-results.show { display: block; }
+.rec-loading { display: flex; align-items: center; gap: 12px; padding: 20px 0; }
+.rec-spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.rec-loading-text { font-size: 14px; opacity: 0.8; }
+.rec-result-list { display: flex; flex-direction: column; gap: 10px; }
+.rec-result-card {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  animation: fadeIn 0.4s ease both;
+}
+.rec-result-card:hover { background: rgba(255,255,255,0.17); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.rec-rank { width: 28px; height: 28px; border-radius: 8px; background: var(--purple); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+.rec-card-info { flex: 1; min-width: 0; }
+.rec-card-name { font-size: 14px; font-weight: 700; }
+.rec-card-reason { font-size: 12px; opacity: 0.65; margin-top: 3px; line-height: 1.4; }
+.rec-card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.rec-tag { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600; }
+.rec-match { background: rgba(108,71,255,0.7); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700; flex-shrink: 0; white-space: nowrap; align-self: flex-start; }
+.rec-result-label { font-size: 12px; opacity: 0.6; margin-bottom: 12px; }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-mid) 100%);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  color: #fff;
+}
+@media(min-width:480px){ .stats-bar { grid-template-columns: repeat(4, 1fr); } }
+@media(min-width:768px){ .stats-bar { display: flex; align-items: center; padding: 20px 32px; gap: 0; } }
+.stat { display: flex; flex-direction: column; gap: 3px; }
+@media(min-width:768px){ .stat { flex: 1; } }
+.stat-value { font-size: 24px; font-weight: 900; letter-spacing: -1px; }
+@media(min-width:768px){ .stat-value { font-size: 28px; } }
+.stat-label { font-size: 12px; opacity: 0.75; font-weight: 500; }
+.stat-divider { display: none; }
+@media(min-width:768px){ .stat-divider { display: block; width: 1px; height: 40px; background: rgba(255,255,255,0.2); margin: 0 24px; } }
+
+/* ── CATEGORY TILES ── */
+.cat-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.cat-scroll::-webkit-scrollbar { display: none; }
+.cat-tile {
+  flex-shrink: 0;
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+  min-width: 90px;
+  text-align: center;
+}
+.cat-tile:hover { border-color: var(--purple); }
+.cat-tile.active { border-color: var(--purple); background: var(--purple-light); }
+.cat-emoji { font-size: 22px; }
+.cat-name { font-size: 11px; font-weight: 700; color: var(--text); }
+.cat-count { font-size: 10px; color: var(--muted); }
+
+/* ── FEATURED HANDLES (wide card stack) ── */
+.featured-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media(min-width:640px){ .featured-stack { grid-template-columns: repeat(2, 1fr); } }
+@media(min-width:1100px){ .featured-stack { grid-template-columns: repeat(4, 1fr); } }
+
+.featured-wide-card {
+  background: var(--white);
+  border-radius: 16px;
+  border: 2px solid transparent;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.featured-wide-card:hover { border-color: var(--purple); box-shadow: 0 8px 32px rgba(45,74,110,0.15); transform: translateY(-2px); }
+
+.fw-cover {
+  height: 156px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.fw-cover.food { background: linear-gradient(135deg,#ff6b35,#ff9a5c); }
+.fw-cover.pets { background: linear-gradient(135deg,#26c9a8,#4dd9b9); }
+.fw-cover.viral { background: linear-gradient(135deg,#ff4d8d,#ff6fa8); }
+.fw-cover.news { background: linear-gradient(135deg,#1565c0,#1e88e5); }
+.fw-blur-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.78) saturate(1.1);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.fw-blur-bg.loaded { opacity: 1; }
+.fw-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.5) 100%);
+}
+.fw-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255,255,255,0.93);
+  color: var(--purple);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+  z-index: 2;
+}
+.fw-logo {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  width: 54px;
+  height: 54px;
+  border-radius: 13px;
+  background: rgba(255,255,255,0.18);
+  border: 2.5px solid rgba(255,255,255,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 900;
+  color: #fff;
+  z-index: 2;
+  overflow: hidden;
+}
+.fw-body { padding: 14px 16px; display: flex; flex-direction: column; flex: 1; }
+.fw-pub { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.fw-name { font-size: 17px; font-weight: 900; letter-spacing: -0.3px; margin-bottom: 7px; }
+.fw-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.fw-handles { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.fw-handle-row { display: flex; align-items: center; gap: 7px; }
+.plat-icon { width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0; color: #fff; }
+.plat-icon.fb { background: #1877f2; }
+.plat-icon.ig { background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366); }
+.fw-handle-name { font-size: 11px; color: #666; flex: 1; }
+.fw-followers { font-size: 12px; font-weight: 800; color: var(--text); }
+.fw-footer { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.fw-total { font-size: 11px; color: var(--muted); }
+.fw-total strong { color: var(--text); }
+.btn-view { font-size: 12px; font-weight: 700; color: var(--purple); background: var(--purple-light); border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; transition: opacity 0.15s; }
+.btn-view:hover { opacity: 0.8; }
+
+/* kept for feat-* refs elsewhere */
+.feat-footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.feat-total { font-size: 11px; color: var(--muted); }
+.feat-total strong { color: var(--text); }
+
+/* ── FILTERS ── */
+.filters-wrap { background: var(--white); border-radius: var(--radius); padding: 12px; margin-bottom: 16px; }
+.filters-top { display: flex; gap: 10px; align-items: center; }
+.search-box { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: var(--radius-sm); padding: 10px 12px; border: 1.5px solid transparent; transition: border-color 0.15s; }
+.search-box:focus-within { border-color: var(--purple); }
+.search-box input { border: none; background: none; font-size: 14px; color: var(--text); outline: none; width: 100%; }
+.search-icon { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+.filter-toggle-btn { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: all 0.15s; }
+.filter-toggle-btn.has-filters { border-color: var(--purple); color: var(--purple); background: var(--purple-light); }
+.filters-expanded { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); gap: 10px; flex-wrap: wrap; }
+.filters-expanded.open { display: flex; }
+.filter-select {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 32px 9px 12px;
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-color: var(--bg);
+  flex: 1;
+  min-width: 130px;
+}
+.filter-select:focus { outline: none; border-color: var(--purple); }
+.filters-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.results-count { font-size: 12px; color: var(--muted); }
+.view-toggle { display: flex; gap: 4px; }
+.vt-btn { width: 32px; height: 32px; border-radius: 7px; border: 1.5px solid var(--border); background: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); transition: all 0.15s; }
+.vt-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+
+/* ── TAG ── */
+.tag { background: var(--purple-light); color: var(--purple); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+
+/* ── CATALOG GRID ── */
+.catalog-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media(min-width:480px){ .catalog-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(min-width:768px){ .catalog-grid { grid-template-columns: repeat(3, 1fr); } }
+@media(min-width:1200px){ .catalog-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.catalog-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.2s;
+}
+.catalog-card:hover { border-color: var(--purple); box-shadow: 0 4px 20px rgba(108,71,255,0.1); transform: translateY(-1px); }
+.cc-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.cc-logo { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 15px; flex-shrink: 0; }
+.cc-logo.food { background: linear-gradient(135deg,#ff6b35,#ff9a5c); }
+.cc-logo.pets { background: linear-gradient(135deg,#26c9a8,#4dd9b9); }
+.cc-logo.viral { background: linear-gradient(135deg,#ff4d8d,#ff6fa8); }
+.cc-logo.news { background: linear-gradient(135deg,#1565c0,#1e88e5); }
+.cc-logo.life { background: linear-gradient(135deg,#f59e0b,#fbbf24); }
+.cc-logo.ent { background: linear-gradient(135deg,#8b5cf6,#a78bfa); }
+.cc-logo.purple { background: linear-gradient(135deg,#2d4a6e,#4a6d9c); }
+.cc-logo.green { background: linear-gradient(135deg,#10b981,#34d399); }
+.cc-info { flex: 1; min-width: 0; }
+.cc-pub { font-size: 9px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.cc-name { font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.cc-handles { display: flex; flex-direction: column; gap: 5px; }
+.cc-handle { display: flex; align-items: center; gap: 6px; }
+.cc-handle-name { font-size: 11px; color: #666; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cc-followers { font-size: 11px; font-weight: 800; color: var(--text); }
+.cc-footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid #f0eef9; display: flex; align-items: center; justify-content: space-between; }
+.cc-total { font-size: 11px; color: var(--muted); }
+.cc-total strong { color: var(--text); }
+.cc-feat-badge { font-size: 10px; font-weight: 700; color: var(--purple); background: var(--purple-light); padding: 2px 8px; border-radius: 20px; }
+
+/* ── LIST VIEW ── */
+.catalog-list { display: flex; flex-direction: column; gap: 10px; }
+.list-card {
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.list-card:hover { border-color: var(--purple); background: #fdfcff; }
+.list-logo { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 13px; flex-shrink: 0; }
+.list-info { flex: 1; min-width: 0; }
+.list-name { font-size: 14px; font-weight: 800; color: var(--text); }
+.list-pub { font-size: 11px; color: var(--muted); }
+.list-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.list-handles { display: flex; gap: 10px; flex-wrap: wrap; }
+.list-handle { display: flex; align-items: center; gap: 5px; }
+.list-followers { font-size: 13px; font-weight: 800; color: var(--text); flex-shrink: 0; text-align: right; }
+.list-followers-label { font-size: 10px; color: var(--muted); }
+.list-arrow { color: var(--muted); font-size: 18px; flex-shrink: 0; }
+@media(max-width:639px){ .list-handles { display: none; } .list-followers { display: none; } }
+
+/* ── DETAIL DRAWER ── */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 300;
+  display: none;
+  backdrop-filter: blur(2px);
+}
+.drawer-overlay.open { display: block; }
+.drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 301;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.drawer.open { transform: translateY(0); }
+@media(min-width:768px){
+  .drawer {
+    bottom: auto;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -40%);
+    width: 560px;
+    border-radius: 20px;
+    max-height: 85vh;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s, opacity 0.25s;
+  }
+  .drawer.open { transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; }
+}
+.drawer-handle { width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 12px auto 0; }
+@media(min-width:768px){ .drawer-handle { display: none; } }
+.drawer-hero {
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+.drawer-hero.food { background: linear-gradient(135deg,#ff6b35,#ff9a5c); }
+.drawer-hero.pets { background: linear-gradient(135deg,#26c9a8,#4dd9b9); }
+.drawer-hero.viral { background: linear-gradient(135deg,#ff4d8d,#ff6fa8); }
+.drawer-hero.news { background: linear-gradient(135deg,#1565c0,#1e88e5); }
+.drawer-hero.life { background: linear-gradient(135deg,#f59e0b,#fbbf24); }
+.drawer-hero.ent { background: linear-gradient(135deg,#8b5cf6,#a78bfa); }
+.drawer-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border: none; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: #333; }
+.drawer-logo { width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; color: #fff; border: 2.5px solid rgba(255,255,255,0.4); }
+.drawer-body { padding: 20px; }
+.drawer-pub { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.drawer-name { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; }
+.drawer-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.drawer-section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; margin-top: 18px; }
+.drawer-handles-list { display: flex; flex-direction: column; gap: 10px; }
+.drawer-handle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.drawer-handle-info { flex: 1; }
+.drawer-handle-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.drawer-handle-url { font-size: 11px; color: var(--purple); margin-top: 2px; text-decoration: none; display: block; }
+.drawer-handle-url:hover { text-decoration: underline; }
+.drawer-handle-followers { font-size: 15px; font-weight: 900; color: var(--text); }
+.drawer-handle-followers-label { font-size: 10px; color: var(--muted); }
+.drawer-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 4px; }
+.drawer-stat { background: var(--bg); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+.drawer-stat-value { font-size: 18px; font-weight: 900; color: var(--text); }
+.drawer-stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.drawer-geo { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 4px; }
+.drawer-geo-flag { font-size: 20px; }
+.drawer-geo-info { flex: 1; }
+.drawer-geo-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.drawer-geo-value { font-size: 13px; font-weight: 700; color: var(--text); }
+.drawer-cta { display: flex; gap: 10px; position: sticky; bottom: 0; background: var(--white); padding: 12px 20px; margin: 12px -20px 0; border-top: 1px solid var(--border); }
+.btn-primary { flex: 1; background: var(--purple); color: #fff; border: none; border-radius: var(--radius-sm); padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.btn-primary:hover { opacity: 0.88; }
+.btn-secondary { background: var(--purple-light); color: var(--purple); border: none; border-radius: var(--radius-sm); padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.btn-secondary:hover { opacity: 0.8; }
+
+/* ── ALL FEATURED VIEW ── */
+.featured-all-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media(min-width:480px){ .featured-all-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(min-width:768px){ .featured-all-grid { grid-template-columns: repeat(3, 1fr); } }
+@media(min-width:1100px){ .featured-all-grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* ── LOAD MORE ── */
+.load-more-wrap { text-align: center; padding: 28px 0 8px; }
+.btn-load-more { background: var(--white); border: 1.5px solid var(--border); color: #555; border-radius: 50px; padding: 12px 28px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-load-more:hover { border-color: var(--purple); color: var(--purple); }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: #fff; padding: 12px 20px; border-radius: 50px; font-size: 13px; font-weight: 600; z-index: 400; transition: transform 0.3s; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── BACK BUTTON ── */
+.back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: var(--purple); font-size: 14px; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 16px; }
+.back-btn:hover { opacity: 0.75; }
+
+/* ── SAVE BUTTON (drawer) ── */
+.btn-save {
+  flex: 1;
+  background: var(--purple-light);
+  color: var(--purple);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-save:hover { background: var(--purple); color: #fff; border-color: var(--purple); }
+.btn-save.saved { background: var(--purple); color: #fff; border-color: var(--purple); }
+.btn-save.saved:hover { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+
+/* ── DISCOVER RESULTS SECTION ── */
+.discover-results-wrap {
+  background: var(--white);
+  border-radius: var(--radius);
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.discover-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.discover-results-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.discover-results-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  color: #555;
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-export:hover { border-color: var(--purple); color: var(--purple); }
+.btn-export:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── DNA CARD ── */
+.dna-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px 20px; margin-top: 16px; }
+.dna-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.dna-card-icon { width: 32px; height: 32px; border-radius: 9px; background: var(--purple-light); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.dna-card-meta { flex: 1; min-width: 0; }
+.dna-card-title { font-size: 13px; font-weight: 800; color: var(--text); }
+.dna-card-domain { font-size: 11px; color: var(--purple); font-weight: 600; }
+.dna-summary { font-size: 13px; color: var(--text); line-height: 1.55; margin-bottom: 12px; }
+.dna-bullets { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.dna-bullets li { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: flex-start; line-height: 1.4; }
+.dna-bullets li::before { content: '•'; color: var(--purple); font-weight: 900; flex-shrink: 0; margin-top: 1px; }
+
+/* ── DISCOVER CATALOG EXTRAS ── */
+.discover-match-badge { font-size: 10px; font-weight: 800; background: var(--purple-light); color: var(--purple); padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; align-self: flex-start; }
+.discover-reason { font-size: 11px; color: var(--muted); line-height: 1.4; margin: 0 0 10px; }
+.discover-rank-num { font-size: 10px; color: var(--muted); font-weight: 600; }
+
+.dri {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+  cursor: pointer;
+}
+.dri:last-child { border-bottom: none; }
+.dri:hover { background: var(--bg); }
+.dri-rank {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: var(--purple-light);
+  color: var(--purple);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800;
+  flex-shrink: 0; margin-top: 1px;
+}
+.dri-info { flex: 1; min-width: 0; }
+.dri-name { font-size: 14px; font-weight: 800; color: var(--text); }
+.dri-reason { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.dri-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+.dri-right { display: flex; align-items: flex-start; gap: 8px; flex-shrink: 0; }
+.dri-match {
+  background: var(--purple-light);
+  color: var(--purple);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dri-save-btn {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.dri-save-btn:hover { border-color: var(--purple); color: var(--purple); }
+.dri-save-btn.saved { background: var(--purple); border-color: var(--purple); color: #fff; }
+
+/* ── SAVED PAGE ── */
+.saved-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; }
+.saved-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--white);
+  border-radius: var(--radius);
+}
+.saved-empty-icon { font-size: 44px; margin-bottom: 12px; }
+.saved-empty-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
+.saved-empty-sub { font-size: 14px; color: var(--muted); }
+.saved-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  margin-bottom: 10px;
+}
+.saved-card:hover { border-color: var(--purple); }
+.saved-card-info { flex: 1; min-width: 0; }
+.saved-card-name { font-size: 14px; font-weight: 800; color: var(--text); }
+.saved-card-pub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.saved-card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+.saved-card-reach { text-align: right; flex-shrink: 0; }
+.saved-card-reach-val { font-size: 14px; font-weight: 800; color: var(--text); }
+.saved-card-reach-label { font-size: 10px; color: var(--muted); }
+.btn-unsave {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.12s;
+  flex-shrink: 0;
+}
+.btn-unsave:hover { color: #e53e3e; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <img src="logo.png" alt="Attentional" style="height:30px;display:block;">
+  </a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-page="browse" onclick="showPage('browse')">Browse</button>
+    <button class="nav-tab" data-page="discover" onclick="showPage('discover')">Discover</button>
+    <button class="nav-tab" data-page="saved" onclick="showPage('saved')">Saved <span id="savedBadge" style="display:none;background:var(--purple);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:2px;vertical-align:middle;">0</span></button>
+  </div>
+  <div class="nav-right" id="navRight"></div>
+</nav>
+
+<!-- MOBILE TAB BAR -->
+<div class="mobile-tab-bar" id="mobileTabBar">
+  <button class="nav-tab active" data-page="browse" onclick="showPage('browse')">Browse</button>
+  <button class="nav-tab" data-page="discover" onclick="showPage('discover')">Discover</button>
+  <button class="nav-tab" data-page="saved" onclick="showPage('saved')">Saved <span id="savedBadgeMobile" style="display:none;background:var(--purple);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:2px;vertical-align:middle;">0</span></button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE: BROWSE
+══════════════════════════════════════════ -->
+<div id="page-browse" class="page active">
+
+  <!-- Stats -->
+  <div class="section" style="padding-bottom:0;">
+    <div class="stats-bar">
+      <div class="stat"><span class="stat-value" id="adv-stat-publishers">—</span><span class="stat-label">Publishers</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-value" id="adv-stat-brands">—</span><span class="stat-label">Brands</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-value" id="adv-stat-handles">—</span><span class="stat-label">Handles</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-value" id="adv-stat-reach">—</span><span class="stat-label">Total Reach</span></div>
+    </div>
+  </div>
+
+  <!-- Featured Handles -->
+  <div class="section" style="padding-bottom:0;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">🔥 Trending Handles</div>
+        <div class="section-sub">Top tier inventory for your campaigns</div>
+      </div>
+    </div>
+    <div class="featured-stack" id="browse-featured-stack"></div>
+  </div>
+
+  <!-- Categories -->
+  <div class="section" style="padding-bottom:0;">
+    <div class="section-header"><div class="section-title">Browse by Category</div></div>
+    <div class="cat-scroll" id="catScroll">
+      <div class="cat-tile active" onclick="filterCat(this,'all')"><span class="cat-emoji">🌐</span><span class="cat-name">All</span><span class="cat-count" id="cat-count-all">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'featured')"><span class="cat-emoji">🔥</span><span class="cat-name">Trending</span><span class="cat-count" id="cat-count-featured">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'food')"><span class="cat-emoji">🍕</span><span class="cat-name">Food</span><span class="cat-count" id="cat-count-food">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'pets')"><span class="cat-emoji">🐾</span><span class="cat-name">Pets</span><span class="cat-count" id="cat-count-pets">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'comedy')"><span class="cat-emoji">😂</span><span class="cat-name">Comedy</span><span class="cat-count" id="cat-count-comedy">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'home')"><span class="cat-emoji">🏠</span><span class="cat-name">Home</span><span class="cat-count" id="cat-count-home">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'news')"><span class="cat-emoji">📰</span><span class="cat-name">News</span><span class="cat-count" id="cat-count-news">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'beauty')"><span class="cat-emoji">💄</span><span class="cat-name">Beauty</span><span class="cat-count" id="cat-count-beauty">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'ent')"><span class="cat-emoji">🎬</span><span class="cat-name">Entertainment</span><span class="cat-count" id="cat-count-ent">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'health')"><span class="cat-emoji">💪</span><span class="cat-name">Health</span><span class="cat-count" id="cat-count-health">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'fashion')"><span class="cat-emoji">👗</span><span class="cat-name">Fashion</span><span class="cat-count" id="cat-count-fashion">—</span></div>
+      <div class="cat-tile" onclick="filterCat(this,'lifestyle')"><span class="cat-emoji">🌿</span><span class="cat-name">Lifestyle</span><span class="cat-count" id="cat-count-lifestyle">—</span></div>
+    </div>
+  </div>
+
+  <!-- All Publishers + Filters -->
+  <div class="section">
+    <div class="section-header"><div class="section-title">All Brands</div></div>
+    <div class="filters-wrap">
+      <div class="filters-top">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search publishers, handles…" oninput="filterSearch(this.value)">
+        </div>
+        <button class="filter-toggle-btn" id="filterToggle" onclick="toggleFilters()">
+          <span>⚙️</span> Filters <span id="filterCount"></span>
+        </button>
+      </div>
+      <div class="filters-expanded" id="filtersExpanded">
+        <select class="filter-select" id="filterPlatform" onchange="applyFilter()">
+          <option value="">All Platforms</option>
+          <option value="fb">Facebook</option>
+          <option value="ig">Instagram</option>
+        </select>
+        <select class="filter-select" id="filterPublisher" onchange="applyFilter()">
+          <option value="">All Publishers</option>
+        </select>
+        <select class="filter-select" id="filterGeo" onchange="applyFilter()">
+          <option value="">All Geos</option>
+        </select>
+        <select class="filter-select" id="filterSort" onchange="applyFilter()">
+          <option value="reach-desc">Followers: High to Low</option>
+          <option value="reach-asc">Followers: Low to High</option>
+          <option value="name-asc">Name A–Z</option>
+          <option value="featured">Trending First</option>
+        </select>
+      </div>
+      <div class="filters-footer">
+        <span class="results-count" id="resultsCount">Loading…</span>
+        <div class="view-toggle">
+          <button class="vt-btn active" id="gridBtn" onclick="setView('grid')" title="Grid view">⊞</button>
+          <button class="vt-btn" id="listBtn" onclick="setView('list')" title="List view">≡</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid View -->
+    <div id="gridView" class="catalog-grid"></div>
+
+    <!-- List View (hidden by default) -->
+    <div id="listView" class="catalog-list" style="display:none;"></div>
+
+    <div class="load-more-wrap" id="catalogLoadMore" style="display:none;">
+      <button class="btn-load-more" onclick="showToast('All publishers loaded')">Load more publishers</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE: DISCOVER (Recommendation Engine)
+══════════════════════════════════════════ -->
+<div id="page-discover" class="page">
+  <div class="section">
+    <div class="rec-hero">
+      <div class="rec-eyebrow">Recommendation Engine</div>
+      <div class="rec-title">Find the right publishers for your brand</div>
+      <div class="rec-sub">Enter your domain and we'll surface the most endemic publishers from our catalog — matched to your brand's content and audience.</div>
+      <div class="rec-input-row">
+        <input class="rec-input" type="text" id="domainInput" placeholder="yourbrand.com" oninput="checkDomain()">
+        <button class="rec-btn" id="recBtn" onclick="runRecommendations()" disabled>Analyze →</button>
+      </div>
+      <div id="recLoading" style="display:none;padding:16px 0 4px;">
+        <div class="rec-loading">
+          <div class="rec-spinner"></div>
+          <span class="rec-loading-text">Analyzing domain and matching publishers…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DNA Card (appears after Analyze) -->
+    <div class="dna-card" id="dnaCrawlCard" style="display:none;">
+      <div class="dna-card-header">
+        <div class="dna-card-icon">🧬</div>
+        <div class="dna-card-meta">
+          <div class="dna-card-title">Brand DNA</div>
+          <div class="dna-card-domain" id="dnaDomain"></div>
+        </div>
+      </div>
+      <div class="dna-summary" id="dnaSummary"></div>
+      <ul class="dna-bullets" id="dnaBullets"></ul>
+    </div>
+
+    <!-- Results section (appears after Analyze) -->
+    <div class="discover-results-wrap" id="discoverResultsWrap" style="display:none;">
+      <div class="discover-results-header">
+        <div>
+          <div class="discover-results-title" id="discoverResultsTitle"></div>
+          <div class="discover-results-sub" id="discoverResultsSub"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn-export" id="saveAllBtn" onclick="saveAllResults()">♡ Save all</button>
+          <button class="btn-export" onclick="exportDiscoverResults()">↓ Export CSV</button>
+        </div>
+      </div>
+      <div id="discoverResultsList"></div>
+    </div>
+
+    <!-- How it works -->
+    <div style="margin-top:24px;">
+      <div class="section-title" style="margin-bottom:16px;">How it works</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+        <div style="background:var(--white);border-radius:var(--radius);padding:18px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--purple-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🧬</div>
+          <div><div style="font-size:14px;font-weight:700;margin-bottom:4px;">1. Brand DNA</div><div style="font-size:13px;color:var(--muted);line-height:1.5;">We analyze your brand's DNA — unpacking your category, audience profile, and content signals to build a precise brand fingerprint.</div></div>
+        </div>
+        <div style="background:var(--white);border-radius:var(--radius);padding:18px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--purple-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🎯</div>
+          <div><div style="font-size:14px;font-weight:700;margin-bottom:4px;">2. Intelligent Matching</div><div style="font-size:13px;color:var(--muted);line-height:1.5;">We match your brand's DNA to publishers whose content is endemic to what you sell — delivering reach to audiences that already overlap with your brand.</div></div>
+        </div>
+        <div style="background:var(--white);border-radius:var(--radius);padding:18px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--purple-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📋</div>
+          <div><div style="font-size:14px;font-weight:700;margin-bottom:4px;">3. Ranked Results</div><div style="font-size:13px;color:var(--muted);line-height:1.5;">Get a ranked shortlist with explanations of why each publisher is a strong match for your campaign.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE: ALL FEATURED
+══════════════════════════════════════════ -->
+<div id="page-featured" class="page">
+  <div class="section">
+    <button class="back-btn" onclick="showPage('browse')">← Back to catalog</button>
+    <div class="section-header">
+      <div>
+        <div class="section-title">🔥 All Trending Handles</div>
+        <div class="section-sub">Top tier inventory for your campaigns · 12 handles</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-wrap" style="margin-bottom:20px;">
+      <div class="filters-top">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search trending publishers…">
+        </div>
+        <select class="filter-select" style="max-width:160px;">
+          <option>All Geos</option>
+          <option>United States</option>
+          <option>United Kingdom</option>
+          <option>Canada</option>
+          <option>Global</option>
+        </select>
+        <select class="filter-select" style="max-width:160px;">
+          <option>All Categories</option>
+          <option>Food</option>
+          <option>Pets</option>
+          <option>Comedy</option>
+          <option>News</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="featured-stack" id="featured-page-stack"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE: SAVED
+══════════════════════════════════════════ -->
+<div id="page-saved" class="page">
+  <div class="section">
+    <div class="saved-toolbar">
+      <div>
+        <div class="section-title">Saved Handles</div>
+        <div class="section-sub" id="savedCountLabel">0 handles saved</div>
+      </div>
+      <button class="btn-export" id="exportSavedBtn" onclick="exportSavedList()" disabled>↓ Export CSV</button>
+    </div>
+    <div id="savedContent">
+      <div class="saved-empty-state">
+        <div class="saved-empty-icon">♡</div>
+        <div class="saved-empty-title">No handles saved yet</div>
+        <div class="saved-empty-sub">Browse the catalog or Discover page and save handles to build your shortlist.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     DRAWER (publisher detail)
+══════════════════════════════════════════ -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div id="drawerContent"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Pages ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-tab[data-page]').forEach(t => {
+    t.classList.toggle('active', t.dataset.page === id);
+  });
+  if (id === 'saved')    renderSavedPage();
+  if (id === 'discover') restoreDiscoverFromCache();
+  window.scrollTo(0, 0);
+}
+
+// ── Filters ──
+let filtersOpen = false;
+function toggleFilters() {
+  filtersOpen = !filtersOpen;
+  document.getElementById('filtersExpanded').classList.toggle('open', filtersOpen);
+  document.getElementById('filterToggle').classList.toggle('has-filters', filtersOpen);
+}
+function applyFilter() {
+  const platform  = document.getElementById('filterPlatform')?.value  || '';
+  const publisher = document.getElementById('filterPublisher')?.value || '';
+  const geo       = document.getElementById('filterGeo')?.value       || '';
+  const sort      = document.getElementById('filterSort')?.value      || 'reach-desc';
+
+  const allGridCards = [...document.querySelectorAll('#gridView .catalog-card')];
+  const allListCards = [...document.querySelectorAll('#listView .list-card')];
+
+  function matches(c) {
+    if (platform  && !c.dataset.platforms?.split(',').includes(platform)) return false;
+    if (publisher && c.dataset.publisher !== publisher) return false;
+    if (geo       && c.dataset.geo !== geo) return false;
+    return true;
+  }
+
+  function sortCards(cards) {
+    cards.sort((a, b) => {
+      if (sort === 'reach-asc')  return Number(a.dataset.reach) - Number(b.dataset.reach);
+      if (sort === 'reach-desc') return Number(b.dataset.reach) - Number(a.dataset.reach);
+      if (sort === 'name-asc')   return a.innerText.localeCompare(b.innerText);
+      if (sort === 'featured')   return Number(b.dataset.featured) - Number(a.dataset.featured);
+      return 0;
+    });
+    return cards;
+  }
+
+  [allGridCards, allListCards].forEach(cards => {
+    const parent = cards[0]?.parentElement;
+    if (!parent) return;
+    sortCards(cards).forEach(c => {
+      c.style.display = matches(c) ? '' : 'none';
+      parent.appendChild(c);
+    });
+  });
+
+  const visible = allGridCards.filter(c => c.style.display !== 'none').length;
+  const count = document.getElementById('resultsCount');
+  if (count) count.textContent = `Showing ${visible} brand${visible !== 1 ? 's' : ''}`;
+
+  const active = [platform, publisher, geo].filter(Boolean).length;
+  const fc = document.getElementById('filterCount');
+  if (fc) fc.textContent = active ? `(${active})` : '';
+}
+function filterSearch(v) {
+  const q = v.toLowerCase();
+  document.querySelectorAll('#gridView .catalog-card').forEach(c => {
+    c.style.display = c.innerText.toLowerCase().includes(q) ? '' : 'none';
+  });
+  document.querySelectorAll('#listView .list-card').forEach(c => {
+    c.style.display = c.innerText.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function filterCat(el, cat) {
+  document.querySelectorAll('.cat-tile').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const cards = document.querySelectorAll('#gridView .catalog-card, #listView .list-card');
+  cards.forEach(c => {
+    const show =
+      cat === 'all' ? true :
+      cat === 'featured' ? c.dataset.featured === '1' :
+      c.dataset.theme === cat;
+    c.style.display = show ? '' : 'none';
+  });
+  const isGrid = document.getElementById('gridView').style.display !== 'none';
+  const visSelector = isGrid ? '#gridView .catalog-card' : '#listView .list-card';
+  const visCount = [...document.querySelectorAll(visSelector)].filter(c => c.style.display !== 'none').length;
+  const count = document.getElementById('resultsCount');
+  if (count) count.textContent = `Showing ${visCount} brand${visCount !== 1 ? 's' : ''}`;
+}
+
+// ── View toggle ──
+function setView(v) {
+  const isGrid = v === 'grid';
+  document.getElementById('gridView').style.display = isGrid ? '' : 'none';
+  document.getElementById('listView').style.display = isGrid ? 'none' : '';
+  document.getElementById('gridBtn').classList.toggle('active', isGrid);
+  document.getElementById('listBtn').classList.toggle('active', !isGrid);
+}
+
+// ── API config ──
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8787'
+  : 'https://attentional-api.accounts-35d.workers.dev';
+
+// Extract FB page slug from a profile URL (IG URLs return null → no image, initials show instead)
+function fbSlugFromUrl(url) {
+  if (!url) return null;
+  const m = String(url).match(/facebook\.com\/([^\/?#]+)/i);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function igSlugFromUrl(url) {
+  if (!url) return null;
+  const m = String(url).match(/instagram\.com\/([^\/?#]+)/i);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+// Pick the right avatar source attr for a publisher: prefer FB Graph (free, unlimited),
+// fall back to IG via our /api/avatar proxy (unavatar.io).
+function logoSrcAttr(p) {
+  // Brand-card avatar priority:
+  //   1. custom override (admin upload / pasted URL)
+  //   2. FB Meta page image — the only fully reliable source, default when FB exists
+  //   3. IG via unavatar — only used when no FB sibling, or as an upgrade attempt
+  //   4. initials (loader fallback when all srcs error)
+  const attrs = [];
+  if (p.customImage) attrs.push(`data-custom-img="${p.customImage}"`);
+  if (p.fbPage)      attrs.push(`data-fb-page="${p.fbPage}"`);
+  if (p.igPage)      attrs.push(`data-ig-page="${p.igPage}"`);
+  return attrs.join(' ');
+}
+
+// ── Publisher data (populated from API) ──
+let publishers = {
+  dodo: {
+    name: 'The Dodo', publisher: 'Vox Media', theme: 'pets', fbPage: 'thedodosite', coverImage: 'https://source.unsplash.com/1200x400/?dog,cat,pet,animal',
+    tags: ['Pets','Animals','CPG'],
+    desc: 'The #1 pet and animal media brand. Unmatched engagement with animal lovers who index highly for pet products, food, and lifestyle brands.',
+    handles: [
+      { platform:'fb', name:'@thedodo', url:'facebook.com/thedodo', followers:'52M' },
+      { platform:'ig', name:'@thedodo', url:'instagram.com/thedodo', followers:'12.9M' },
+    ],
+    totalReach: '64.9M', geo: '🇺🇸 United States', featured: true,
+  },
+  tastyhome: {
+    name: 'Tasty Home', publisher: 'BuzzFeed Inc.', theme: 'food', fbPage: 'buzzfeedtastyhome',
+    tags: ['Food','Home','Cooking'],
+    desc: 'Tasty\'s home & lifestyle vertical. Reaches homeowners and home cooks interested in kitchen tools, decor, and entertaining.',
+    handles: [
+      { platform:'fb', name:'@buzzfeedtastyhome', url:'facebook.com/buzzfeedtastyhome', followers:'30.3M' },
+      { platform:'ig', name:'@tastyhome', url:'instagram.com/tastyhome', followers:'4.6M' },
+    ],
+    totalReach: '34.9M', geo: '🇺🇸 United States', featured: false,
+  },
+  failarmy: {
+    name: 'FailArmy', publisher: 'Trusted Media Brands', theme: 'viral', fbPage: 'failarmy', coverImage: 'https://source.unsplash.com/1200x400/?action,sports,funny,stunt',
+    tags: ['Comedy','Fails','Viral','UGC','Pets','Animals'],
+    desc: 'The original viral fail and comedy page. Massive male-skewing audience with high engagement rates. Great for automotive, gaming, sports, and snack brands.',
+    handles: [
+      { platform:'fb', name:'@failarmy', url:'facebook.com/failarmy', followers:'26.4M' },
+      { platform:'ig', name:'@failarmy', url:'instagram.com/failarmy', followers:'4.2M' },
+      { platform:'fb', name:'@failarmy_extra', url:'facebook.com/failarmy_extra', followers:'630K' },
+    ],
+    totalReach: '31.2M', geo: '🇺🇸 United States', featured: true,
+  },
+  dailymail: {
+    name: 'Daily Mail', publisher: 'DailyMail', theme: 'news', fbPage: 'dailymail', coverImage: 'https://source.unsplash.com/1200x400/?newspaper,city,london,news',
+    tags: ['News','Entertainment','Lifestyle'],
+    desc: 'One of the world\'s most-read English-language news brands. Broad demographic reach across news, celebrity, and lifestyle content.',
+    handles: [
+      { platform:'fb', name:'@dailymail', url:'facebook.com/dailymail', followers:'18.3M' },
+      { platform:'ig', name:'@dailymail', url:'instagram.com/dailymail', followers:'3.1M' },
+    ],
+    totalReach: '21.4M', geo: '🇬🇧 United Kingdom', featured: true,
+  },
+  '90s': {
+    name: '90s Kids', publisher: 'Bustle', theme: 'life', fbPage: '90skidsbustle',
+    tags: ['Nostalgia','Lifestyle','Entertainment'],
+    desc: 'A dedicated nostalgia community for millennials who grew up in the 90s. High affinity for pop culture and lifestyle brands.',
+    handles: [
+      { platform:'fb', name:'@90skidsbustle', url:'facebook.com/90skidsbustle', followers:'1.1M' },
+    ],
+    totalReach: '1.1M', geo: '🇺🇸 United States', featured: false,
+  },
+  adweek: {
+    name: 'Adweek', publisher: 'ADWEEK', theme: 'ent', fbPage: null,
+    tags: ['Marketing','Advertising','Business'],
+    desc: 'The leading media brand for advertising and marketing professionals. Reaches CMOs, brand managers, and agency decision-makers.',
+    handles: [
+      { platform:'ig', name:'@adweek', url:'instagram.com/adweek', followers:'585K' },
+    ],
+    totalReach: '585K', geo: '🇺🇸 United States', featured: false,
+  },
+  bachelor: {
+    name: 'Bachelor Fans', publisher: 'Bustle', theme: 'purple', fbPage: 'bacheloronbustle',
+    tags: ['Entertainment','Reality TV'],
+    desc: 'Dedicated Bachelor Nation community. Highly engaged female audience with strong affinity for beauty, fashion, and lifestyle brands.',
+    handles: [
+      { platform:'fb', name:'@bacheloronbustle', url:'facebook.com/bacheloronbustle', followers:'108K' },
+    ],
+    totalReach: '108K', geo: '🇺🇸 United States', featured: false,
+  },
+};
+
+// ── Drawer ──
+function openDrawer(id) {
+  const p = publishers[id];
+  if (!p) return;
+  const themeColors = {
+    food:'linear-gradient(135deg,#ff6b35,#ff9a5c)',
+    pets:'linear-gradient(135deg,#26c9a8,#4dd9b9)',
+    viral:'linear-gradient(135deg,#ff4d8d,#ff6fa8)',
+    news:'linear-gradient(135deg,#1565c0,#1e88e5)',
+    life:'linear-gradient(135deg,#f59e0b,#fbbf24)',
+    ent:'linear-gradient(135deg,#8b5cf6,#a78bfa)',
+    purple:'linear-gradient(135deg,#6c47ff,#9b6dff)',
+    green:'linear-gradient(135deg,#10b981,#34d399)',
+  };
+  const handlesHTML = p.handles.map(h => `
+    <div class="drawer-handle-row">
+      <div class="plat-icon ${h.platform}" style="width:28px;height:28px;border-radius:7px;font-size:13px;">${h.platform==='fb'?'f':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="65%" height="65%"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>'}</div>
+      <div class="drawer-handle-info">
+        <div class="drawer-handle-name">${h.name}</div>
+        <a class="drawer-handle-url" href="${h.url}" target="_blank" rel="noopener noreferrer">${h.url}</a>
+      </div>
+      <div style="text-align:right;">
+        <div class="drawer-handle-followers">${h.followers}</div>
+        <div class="drawer-handle-followers-label">followers</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('drawerContent').innerHTML = `
+    <div class="drawer-hero ${p.theme}" style="background:${themeColors[p.theme]}">
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      <div class="drawer-logo" style="overflow:hidden;padding:0;">${
+        p.fbPage ? `<img src="https://graph.facebook.com/${p.fbPage}/picture?type=large" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<span style=\\'font-size:28px;font-weight:900;\\'>${p.name.substring(0,2).toUpperCase()}</span>'">`
+        : p.igPage ? `<img src="${API_BASE}/api/avatar/ig/${encodeURIComponent(p.igPage)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<span style=\\'font-size:28px;font-weight:900;\\'>${p.name.substring(0,2).toUpperCase()}</span>'">`
+        : `<span style="font-size:28px;font-weight:900;">${p.name.substring(0,2).toUpperCase()}</span>`
+      }</div>
+    </div>
+    <div class="drawer-body">
+      ${p.featured ? '<span style="font-size:10px;background:var(--purple-light);color:var(--purple);font-weight:800;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:10px;">🔥 TRENDING</span>' : ''}
+      <div class="drawer-pub">${p.publisher}</div>
+      <div class="drawer-name">${p.name}</div>
+      <div class="drawer-tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:4px;">${p.desc}</p>
+
+      <div class="drawer-section-label">Handles</div>
+      <div class="drawer-handles-list">${handlesHTML}</div>
+
+      <div class="drawer-section-label">Reach Summary</div>
+      <div class="drawer-stats-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="drawer-stat"><div class="drawer-stat-value">${p.totalReach}</div><div class="drawer-stat-label">Total Reach</div></div>
+        <div class="drawer-stat"><div class="drawer-stat-value">${p.handles.length}</div><div class="drawer-stat-label">Handles</div></div>
+      </div>
+
+      <div class="drawer-section-label">Audience Geography</div>
+      <div class="drawer-geo">
+        <div class="drawer-geo-flag">${p.geo.split(' ')[0]}</div>
+        <div class="drawer-geo-info">
+          <div class="drawer-geo-label">Primary Market</div>
+          <div class="drawer-geo-value">${p.geo.split(' ').slice(1).join(' ')}</div>
+        </div>
+      </div>
+
+      <div class="drawer-cta">
+        <button class="btn-save${savedPublishers.has(id) ? ' saved' : ''}" id="drawer-save-${id}" onclick="toggleSave('${id}')">${savedPublishers.has(id) ? '♥ Saved' : '♡ Save to list'}</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('drawerOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('drawer').classList.add('open'), 10);
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Recommendation Engine ──
+const mockResults = {
+  'petco.com': [
+    { id:'dodo', rank:1, name:'The Dodo', reason:'Endemic pet and animal content — audience actively purchases pet supplies and food.', tags:['Pets','Animals','CPG'], match:'98% match' },
+    { id:'failarmy', rank:2, name:'FailArmy', reason:'High overlap with pet-owner demographics, frequent viral animal content.', tags:['Pets','Animals','Comedy'], match:'84% match' },
+    { id:'tastyhome', rank:3, name:'Tasty Home', reason:'Home-focused audience with strong pet ownership correlation.', tags:['Home','Lifestyle'], match:'71% match' },
+  ],
+  default: [
+    { id:'tasty', rank:1, name:'Tasty', reason:'Largest food-adjacent reach in catalog — broad CPG-friendly audience.', tags:['Food','Recipes'], match:'92% match' },
+    { id:'dodo', rank:2, name:'The Dodo', reason:'Highly engaged lifestyle audience with strong brand affinity.', tags:['Pets','Lifestyle'], match:'78% match' },
+    { id:'dailymail', rank:3, name:'Daily Mail', reason:'Broad editorial audience good for awareness campaigns.', tags:['News','Entertainment'], match:'65% match' },
+    { id:'failarmy', rank:4, name:'FailArmy', reason:'Strong male 18–34 demographic, good for disruptive creative.', tags:['Comedy','Viral'], match:'61% match' },
+  ],
+};
+
+let currentDiscoverResults = [];
+
+const IG_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="65%" height="65%"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>`;
+
+function renderDiscoverResults(data, title, sub) {
+  currentDiscoverResults = data;
+  document.getElementById('discoverResultsTitle').textContent = title;
+  document.getElementById('discoverResultsSub').textContent = sub;
+  document.getElementById('discoverResultsWrap').style.display = '';
+
+  document.getElementById('discoverResultsList').innerHTML = `<div class="catalog-grid" style="padding:16px;">${
+    data.map((r, i) => {
+      const p = publishers[r.id];
+      if (!p) return '';
+      const handlesHtml = p.handles.slice(0, 3).map(h => `
+        <div class="cc-handle">
+          <div class="plat-icon ${h.platform}">${h.platform === 'fb' ? 'f' : IG_ICON}</div>
+          <span class="cc-handle-name">${h.name}</span>
+          <span class="cc-followers">${h.followers}</span>
+        </div>`).join('');
+      const tagsHtml = p.tags.slice(0, 3).map(t => `<span class="tag">${t}</span>`).join('');
+      return `
+        <div class="catalog-card" style="animation:fadeIn 0.3s ${i * 0.06}s both" onclick="openDrawer('${r.id}')">
+          <div class="cc-header">
+            <div class="cc-logo ${p.theme}" ${logoSrcAttr(p)}>${p.name.substring(0, 2).toUpperCase()}</div>
+            <div class="cc-info"><div class="cc-pub">${p.publisher}</div><div class="cc-name">${p.name}</div></div>
+            <div class="discover-match-badge">${r.match}</div>
+          </div>
+          <div class="cc-tags">${tagsHtml}</div>
+          <div class="cc-handles">${handlesHtml}</div>
+          <div class="discover-reason">${r.reason}</div>
+          <div class="cc-footer">
+            <span class="cc-total">Total <strong>${p.totalReach}</strong></span>
+            <span class="discover-rank-num">#${r.rank}</span>
+          </div>
+        </div>`;
+    }).join('')
+  }</div>`;
+
+  loadBrandImages();
+  updateSaveAllBtn();
+}
+
+function updateSaveAllBtn() {
+  const btn = document.getElementById('saveAllBtn');
+  if (!btn) return;
+  const ids = currentDiscoverResults.filter(r => r.id).map(r => r.id);
+  const savedCount = ids.filter(id => savedPublishers.has(id)).length;
+  if (savedCount === ids.length && ids.length > 0) {
+    btn.textContent = '♥ All saved';
+    btn.style.color = 'var(--purple)';
+    btn.style.borderColor = 'var(--purple)';
+  } else {
+    btn.textContent = savedCount > 0 ? `♡ Save remaining (${ids.length - savedCount})` : `♡ Save all (${ids.length})`;
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+}
+
+function saveAllResults() {
+  const ids = currentDiscoverResults.filter(r => r.id && !savedPublishers.has(r.id)).map(r => r.id);
+  if (!ids.length) return;
+  ids.forEach(id => savedPublishers.add(id));
+  updateSavedBadge();
+  // Refresh all save buttons in results list
+  document.querySelectorAll('.dri-save-btn').forEach(btn => {
+    const id = btn.dataset.id;
+    if (savedPublishers.has(id)) {
+      btn.classList.add('saved');
+      btn.textContent = '♥ Saved';
+      btn.title = 'Remove from saved';
+    }
+  });
+  updateSaveAllBtn();
+  showToast(`${ids.length} publisher${ids.length > 1 ? 's' : ''} saved to list`);
+  if (document.getElementById('page-saved').classList.contains('active')) renderSavedPage();
+}
+
+// ── Discover localStorage cache ──
+const DISCOVER_CACHE_KEY = 'attentional_discover_v1';
+
+function saveDiscoverCache(domain, dna, results) {
+  try { localStorage.setItem(DISCOVER_CACHE_KEY, JSON.stringify({ domain, dna, results, ts: Date.now() })); } catch(e) {}
+}
+
+function loadDiscoverCache() {
+  try { return JSON.parse(localStorage.getItem(DISCOVER_CACHE_KEY) || 'null'); } catch { return null; }
+}
+
+function clearDiscoverCache() {
+  localStorage.removeItem(DISCOVER_CACHE_KEY);
+  document.getElementById('dnaCrawlCard').style.display = 'none';
+  document.getElementById('discoverResultsWrap').style.display = 'none';
+  document.getElementById('domainInput').value = '';
+  currentDiscoverResults = [];
+}
+
+function restoreDiscoverFromCache() {
+  const cache = loadDiscoverCache();
+  if (!cache || !Object.keys(publishers).length) return;
+  document.getElementById('domainInput').value = cache.domain;
+  renderDnaCard(cache.dna, cache.domain);
+  renderDiscoverResults(cache.results, `Results for ${cache.domain}`, `${cache.results.length} publishers matched to your brand`);
+}
+
+function renderDnaCard(dna, domain) {
+  document.getElementById('dnaDomain').textContent = domain;
+  document.getElementById('dnaSummary').textContent = dna.summary || '';
+  document.getElementById('dnaBullets').innerHTML = (dna.bullets || []).map(b => `<li>${b}</li>`).join('');
+  document.getElementById('dnaCrawlCard').style.display = '';
+}
+
+// ── Loading text cycle ──
+const LOADING_STEPS = [
+  'Fetching your website…',
+  'Analyzing brand DNA…',
+  'Matching publishers…',
+  'Ranking results…',
+];
+let loadingInterval = null;
+
+function startLoadingCycle() {
+  let step = 0;
+  const el = document.querySelector('#recLoading .rec-loading-text');
+  if (el) el.textContent = LOADING_STEPS[0];
+  loadingInterval = setInterval(() => {
+    step = (step + 1) % LOADING_STEPS.length;
+    if (el) el.textContent = LOADING_STEPS[step];
+  }, 3500);
+}
+
+function stopLoadingCycle() {
+  if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
+}
+
+function checkDomain() {
+  const v = document.getElementById('domainInput').value.trim();
+  document.getElementById('recBtn').disabled = v.length < 4;
+}
+
+async function runRecommendations() {
+  const domain    = document.getElementById('domainInput').value.trim();
+  const loadingEl = document.getElementById('recLoading');
+  loadingEl.style.display = 'block';
+  document.getElementById('recBtn').disabled = true;
+  startLoadingCycle();
+  try {
+    const res  = await fetch(`${API_BASE}/api/discover`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ domain }),
+    });
+    const data = await res.json();
+    stopLoadingCycle();
+    loadingEl.style.display = 'none';
+    document.getElementById('recBtn').disabled = false;
+    if (!res.ok || data.error) {
+      showToast(data.error || 'Analysis failed — please try again');
+      return;
+    }
+    const results = (data.results || []).map(r => ({
+      id:     r.brand_key,
+      rank:   r.rank,
+      name:   r.brand_name,
+      reason: r.reason,
+      tags:   r.matched_tags || [],
+      match:  r.match_label,
+    }));
+    renderDnaCard(data.dna, data.domain);
+    renderDiscoverResults(results, `Results for ${data.domain}`, `${results.length} publishers matched to your brand`);
+    saveDiscoverCache(data.domain, data.dna, results);
+  } catch(e) {
+    stopLoadingCycle();
+    loadingEl.style.display = 'none';
+    document.getElementById('recBtn').disabled = false;
+    showToast('Could not reach API — is the Worker deployed?');
+  }
+}
+
+// ── Load publishers from API and render everything ──
+async function loadPublishers() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/featured?all=1`);
+    const json = await res.json();
+    publishers = {};
+    (json.data || []).forEach(b => {
+      const fbHandle = b.handles.find(h => h.platform === 'fb');
+      const igHandle = b.handles.find(h => h.platform === 'ig');
+      const fbPage   = fbHandle ? fbSlugFromUrl(fbHandle.profile_url) : null;
+      const igPage   = igHandle
+        ? (igSlugFromUrl(igHandle.profile_url) || (igHandle.handle_name || '').replace(/^@/, ''))
+        : null;
+      // Prefer per-brand custom image: take first non-null custom_image_url
+      // across the brand's handles (IG wins if both set, since user uploads
+      // are typically the IG real avatar override).
+      const customImage = (b.handles.find(h => h.platform === 'ig' && h.custom_image_url)?.custom_image_url)
+                       || (b.handles.find(h => h.custom_image_url)?.custom_image_url)
+                       || null;
+      publishers[b.brand_key] = {
+        name:       b.brand_name,
+        publisher:  b.publisher_name,
+        theme:      categoryToTheme(b.categories),
+        fbPage,
+        igPage,
+        customImage,
+        tags:       b.categories,
+        desc:       `${b.brand_name} reaches ${formatReach(b.total_reach)} across ${b.handles.map(h=>h.platform.toUpperCase()).join(' + ')}. Part of ${b.publisher_name}'s portfolio.`,
+        handles:    b.handles.map(h => ({
+          platform:  h.platform,
+          name:      h.handle_name,
+          url:       h.profile_url || '',
+          followers: formatReach(h.followers),
+        })),
+        totalReach: formatReach(b.total_reach),
+        rawReach:   b.total_reach,
+        geo:        b.geography,
+        featured:   b.featured,
+      };
+    });
+    renderFeaturedStack();
+    renderCatalogGrid();
+    renderFeaturedPage();
+    loadBrandImages();
+    loadFeaturedCovers();
+  } catch(e) {
+    console.warn('loadPublishers failed', e);
+    showToast('Could not load publishers — is the Worker running?');
+  }
+}
+
+function categoryToTheme(cats) {
+  if (!cats || !cats.length) return 'purple';
+  const c = (cats[0] || '').toLowerCase();
+  if (c.includes('food') || c.includes('recipe') || c.includes('cook')) return 'food';
+  if (c.includes('pet') || c.includes('animal')) return 'pets';
+  if (c.includes('comedy') || c.includes('viral') || c.includes('fail')) return 'comedy';
+  if (c.includes('news') || c.includes('politics')) return 'news';
+  if (c.includes('home') || c.includes('nostalgia')) return 'home';
+  if (c.includes('beauty') || c.includes('makeup') || c.includes('skin')) return 'beauty';
+  if (c.includes('fashion') || c.includes('style') || c.includes('outfit')) return 'fashion';
+  if (c.includes('life') || c.includes('wellness')) return 'lifestyle';
+  return 'ent';
+}
+function formatReach(n) {
+  if (!n) return '0';
+  if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0)+'K';
+  return String(n);
+}
+
+function buildFeaturedCardHTML(id, p, showSaveBtn = false) {
+  const handles = p.handles.map(h => `
+    <div class="fw-handle-row">
+      <div class="plat-icon ${h.platform}">${h.platform==='fb'?'f':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="65%" height="65%"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>'}</div>
+      <span class="fw-handle-name">${h.name}</span>
+      <span class="fw-followers">${h.followers}</span>
+    </div>`).join('');
+  const tags = p.tags.slice(0,3).map(t=>`<span class="tag">${t}</span>`).join('');
+  const fbP  = p.fbPage || '';
+  return `
+    <div class="featured-wide-card" onclick="openDrawer('${id}')">
+      <div class="fw-cover ${p.theme}" ${fbP?`data-fb-cover="${fbP}"`:''}${p.coverImage?` data-cover-fallback="${p.coverImage}"`:''}>
+        <div class="fw-blur-bg"></div>
+        <div class="fw-cover-overlay"></div>
+        <span class="fw-badge">🔥 Trending</span>
+        <div class="fw-logo" ${logoSrcAttr(p)}>${p.name.substring(0,2).toUpperCase()}</div>
+      </div>
+      <div class="fw-body">
+        <div class="fw-pub">${p.publisher}</div>
+        <div class="fw-name">${p.name}</div>
+        <div class="fw-tags">${tags}</div>
+        <div class="fw-handles">${handles}</div>
+        <div class="fw-footer"><div class="fw-total">Total: <strong>${p.totalReach}</strong></div><button class="btn-view">View →</button></div>
+      </div>
+    </div>`;
+}
+
+function renderFeaturedStack() {
+  const el = document.getElementById('browse-featured-stack');
+  if (!el) return;
+  const featured = Object.entries(publishers).filter(([,p]) => p.featured).slice(0,4);
+  el.innerHTML = featured.map(([id,p]) => buildFeaturedCardHTML(id, p)).join('');
+}
+function renderFeaturedPage() {
+  const el = document.getElementById('featured-page-stack');
+  if (!el) return;
+  const featured = Object.entries(publishers).filter(([,p]) => p.featured);
+  el.innerHTML = featured.map(([id,p]) => buildFeaturedCardHTML(id, p)).join('');
+}
+function renderCatalogGrid() {
+  const entries = Object.entries(publishers);
+  const grid = document.getElementById('gridView');
+  const list = document.getElementById('listView');
+  if (grid) {
+    grid.innerHTML = entries.map(([id,p]) => {
+      const handles = p.handles.slice(0,3).map(h => `
+        <div class="cc-handle">
+          <div class="plat-icon ${h.platform}">${h.platform==='fb'?'f':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="65%" height="65%"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>'}</div>
+          <span class="cc-handle-name">${h.name}</span>
+          <span class="cc-followers">${h.followers}</span>
+        </div>`).join('');
+      const tags = p.tags.slice(0,3).map(t=>`<span class="tag">${t}</span>`).join('');
+      const fbP  = p.fbPage||'';
+      return `
+        <div class="catalog-card" data-theme="${p.theme}" data-featured="${p.featured?1:0}" data-publisher="${p.publisher}" data-geo="${p.geo}" data-platforms="${p.handles.map(h=>h.platform).join(',')}" data-reach="${p.rawReach||0}" onclick="openDrawer('${id}')">
+          <div class="cc-header">
+            <div class="cc-logo ${p.theme}" ${logoSrcAttr(p)}>${p.name.substring(0,2).toUpperCase()}</div>
+            <div class="cc-info"><div class="cc-pub">${p.publisher}</div><div class="cc-name">${p.name}</div></div>
+          </div>
+          <div class="cc-tags">${tags}</div>
+          <div class="cc-handles">${handles}</div>
+          <div class="cc-footer">
+            <span class="cc-total">Total <strong>${p.totalReach}</strong></span>
+            ${p.featured?'<span class="cc-feat-badge">🔥 Trending</span>':''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+  if (list) {
+    list.innerHTML = entries.map(([id,p]) => {
+      const hIcons = p.handles.slice(0,3).map(h => `<div class="list-handle"><div class="plat-icon ${h.platform}">${h.platform==='fb'?'f':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="65%" height="65%"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>'}</div><span style="font-size:11px;color:#666;">${h.followers}</span></div>`).join('');
+      const tags   = p.tags.slice(0,2).map(t=>`<span class="tag">${t}</span>`).join('');
+      const fbP    = p.fbPage||'';
+      return `
+        <div class="list-card" data-theme="${p.theme}" data-featured="${p.featured?1:0}" data-publisher="${p.publisher}" data-geo="${p.geo}" data-platforms="${p.handles.map(h=>h.platform).join(',')}" data-reach="${p.rawReach||0}" onclick="openDrawer('${id}')">
+          <div class="list-logo ${p.theme}" ${logoSrcAttr(p)}>${p.name.substring(0,2).toUpperCase()}</div>
+          <div class="list-info">
+            <div class="list-name">${p.name}${p.featured?'<span style="font-size:10px;background:var(--purple-light);color:var(--purple);font-weight:700;padding:2px 7px;border-radius:20px;margin-left:6px;">🔥 Trending</span>':''}</div>
+            <div class="list-pub">${p.publisher}</div>
+            <div class="list-tags">${tags}</div>
+          </div>
+          <div class="list-handles">${hIcons}</div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div class="list-followers">${p.totalReach}</div>
+            <div class="list-followers-label">total reach</div>
+          </div>
+          <span class="list-arrow">›</span>
+        </div>`;
+    }).join('');
+  }
+  const count = document.getElementById('resultsCount');
+  if (count) count.textContent = `Showing ${entries.length} brands`;
+  const catAll = document.getElementById('cat-count-all');
+  if (catAll) catAll.textContent = entries.length;
+  const catFeat = document.getElementById('cat-count-featured');
+  if (catFeat) catFeat.textContent = entries.filter(([,p]) => p.featured).length;
+  ['food','pets','comedy','home','news','beauty','ent','health','fashion','lifestyle'].forEach(theme => {
+    const el = document.getElementById(`cat-count-${theme}`);
+    if (el) el.textContent = entries.filter(([,p]) => p.theme === theme).length;
+  });
+
+  // Brand stat
+  const brandEl = document.getElementById('adv-stat-brands');
+  if (brandEl) brandEl.textContent = entries.length;
+
+  // Nav right
+  const navRight = document.getElementById('navRight');
+  if (navRight) navRight.textContent = `${entries.length} brands · ${entries.reduce((n,[,p])=>n+p.handles.length,0)} handles`;
+
+  // Populate publishers filter dropdown
+  const pubSel = document.getElementById('filterPublisher');
+  if (pubSel) {
+    const pubs = [...new Set(entries.map(([,p]) => p.publisher).filter(Boolean))].sort();
+    pubSel.innerHTML = `<option value="">All Publishers</option>` + pubs.map(n => `<option value="${n}">${n}</option>`).join('');
+  }
+
+  // Populate geos filter dropdown (strip emoji flag prefix for matching)
+  const geoSel = document.getElementById('filterGeo');
+  if (geoSel) {
+    const geos = [...new Set(entries.map(([,p]) => p.geo).filter(Boolean))].sort();
+    geoSel.innerHTML = `<option value="">All Geos</option>` + geos.map(g => `<option value="${g}">${g}</option>`).join('');
+  }
+}
+
+async function loadMarketplaceStats() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/stats`);
+    const data = await res.json();
+    const set  = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+    set('adv-stat-publishers', data.publisher_count);
+    set('adv-stat-handles',    data.active_handles);
+    set('adv-stat-reach',      formatReach(data.total_reach));
+  } catch(e) { console.warn('loadMarketplaceStats failed', e); }
+}
+
+// ── Brand logo image loader ──
+function loadBrandImages() {
+  // Build per-element fallback chain in priority order, then walk the chain
+  // on each img.onerror until one loads (or initials remain).
+  document.querySelectorAll('[data-custom-img], [data-ig-page], [data-fb-page]').forEach(el => {
+    if (el._imgLoaded) return;
+    const chain = [];
+    if (el.dataset.customImg) chain.push(el.dataset.customImg);
+    if (el.dataset.fbPage)    chain.push(`https://graph.facebook.com/${el.dataset.fbPage}/picture?type=square`);
+    if (el.dataset.igPage)    chain.push(`${API_BASE}/api/avatar/ig/${encodeURIComponent(el.dataset.igPage)}`);
+    if (!chain.length) return;
+
+    const fallback = el.innerHTML;
+    el._imgLoaded = true;
+    el.style.padding = '0';
+    el.style.overflow = 'hidden';
+    const img = document.createElement('img');
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;';
+    let i = 0;
+    img.onerror = () => {
+      i++;
+      if (i < chain.length) { img.src = chain[i]; return; }
+      el.style.padding = ''; el.innerHTML = fallback; el._imgLoaded = false;
+    };
+    img.src = chain[0];
+    el.innerHTML = '';
+    el.appendChild(img);
+  });
+}
+
+// ── Featured cover photo loader ──
+async function loadFeaturedCovers() {
+  const covers = document.querySelectorAll('.fw-cover[data-fb-cover], .fw-cover[data-cover-fallback]');
+  for (const cover of covers) {
+    const page = cover.dataset.fbCover;
+    const fallback = cover.dataset.coverFallback;
+    const blurEl = cover.querySelector('.fw-blur-bg');
+    if (!blurEl) continue;
+    let src = null;
+    if (page) {
+      try {
+        const r = await fetch(`https://graph.facebook.com/${page}?fields=cover`, { mode: 'cors' });
+        const data = await r.json();
+        if (data.cover?.source) src = data.cover.source;
+      } catch (e) {}
+    }
+    if (!src) src = fallback || null;
+    if (src) { blurEl.style.backgroundImage = `url('${src}')`; blurEl.classList.add('loaded'); }
+  }
+}
+
+// ── Saved list (localStorage-persisted) ──
+const savedPublishers = new Set(JSON.parse(localStorage.getItem('attentional-saved') || '[]'));
+function persistSaved() {
+  localStorage.setItem('attentional-saved', JSON.stringify([...savedPublishers]));
+}
+
+function toggleSave(id) {
+  const isSaved = savedPublishers.has(id);
+  if (isSaved) {
+    savedPublishers.delete(id);
+    showToast('Removed from saved list');
+  } else {
+    savedPublishers.add(id);
+    showToast((publishers[id]?.name || id) + ' saved to list');
+  }
+  updateSavedBadge();
+  const drawerBtn = document.getElementById('drawer-save-' + id);
+  if (drawerBtn) {
+    drawerBtn.textContent = savedPublishers.has(id) ? '♥ Saved' : '♡ Save to list';
+    drawerBtn.classList.toggle('saved', savedPublishers.has(id));
+  }
+  document.querySelectorAll(`.dri-save-btn[data-id="${id}"]`).forEach(btn => {
+    const now = savedPublishers.has(id);
+    btn.classList.toggle('saved', now);
+    btn.title = now ? 'Remove from saved' : 'Save to list';
+    btn.textContent = now ? '♥ Saved' : '♡ Save';
+  });
+  updateSaveAllBtn();
+  persistSaved();
+  if (document.getElementById('page-saved').classList.contains('active')) renderSavedPage();
+}
+
+function updateSavedBadge() {
+  const count = savedPublishers.size;
+  ['savedBadge', 'savedBadgeMobile'].forEach(id => {
+    const badge = document.getElementById(id);
+    if (!badge) return;
+    badge.style.display = count > 0 ? 'inline' : 'none';
+    badge.textContent = count;
+  });
+}
+
+function renderSavedPage() {
+  const content = document.getElementById('savedContent');
+  const countLabel = document.getElementById('savedCountLabel');
+  const exportBtn = document.getElementById('exportSavedBtn');
+  const count = savedPublishers.size;
+  countLabel.textContent = count + ' handle' + (count !== 1 ? 's' : '') + ' saved';
+  exportBtn.disabled = count === 0;
+  if (count === 0) {
+    content.innerHTML = `<div class="saved-empty-state"><div class="saved-empty-icon">♡</div><div class="saved-empty-title">No handles saved yet</div><div class="saved-empty-sub">Browse the catalog or Discover page and save handles to build your shortlist.</div></div>`;
+    return;
+  }
+  content.innerHTML = Array.from(savedPublishers).map(id => {
+    const p = publishers[id];
+    if (!p) return '';
+    const logoEl = p.fbPage
+      ? `<img src="https://graph.facebook.com/${p.fbPage}/picture?type=square" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.style.display='none'">`
+      : p.igPage
+      ? `<img src="${API_BASE}/api/avatar/ig/${encodeURIComponent(p.igPage)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.style.display='none'">`
+      : p.name.substring(0, 2).toUpperCase();
+    return `
+      <div class="saved-card" onclick="openDrawer('${id}')">
+        <div class="cc-logo ${p.theme}" style="width:44px;height:44px;border-radius:11px;flex-shrink:0;">${logoEl}</div>
+        <div class="saved-card-info">
+          <div class="saved-card-name">${p.name}</div>
+          <div class="saved-card-pub">${p.publisher} · ${p.geo.split(' ').slice(1).join(' ')}</div>
+          <div class="saved-card-tags">${p.tags.slice(0,3).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        </div>
+        <div class="saved-card-reach">
+          <div class="saved-card-reach-val">${p.totalReach}</div>
+          <div class="saved-card-reach-label">total reach</div>
+        </div>
+        <button class="btn-unsave" onclick="event.stopPropagation();toggleSave('${id}')" title="Remove">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function exportCSV(rows, filename) {
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportSavedList() {
+  const rows = [['Name','Publisher','Total Reach','Handles','Tags','Geo']];
+  savedPublishers.forEach(id => {
+    const p = publishers[id];
+    if (!p) return;
+    rows.push([p.name, p.publisher, p.totalReach, p.handles.map(h=>h.name+' ('+h.followers+')').join('; '), p.tags.join(', '), p.geo.split(' ').slice(1).join(' ')]);
+  });
+  exportCSV(rows, 'attentional-saved-handles.csv');
+  showToast('Exported ' + (rows.length - 1) + ' handles');
+}
+
+function exportDiscoverResults() {
+  if (!currentDiscoverResults.length) return;
+  const rows = [['Rank','Name','Match','Reason','Tags']];
+  currentDiscoverResults.forEach(r => rows.push([r.rank, r.name, r.match, r.reason, r.tags.join(', ')]));
+  exportCSV(rows, 'attentional-discover-results.csv');
+  showToast('Exported ' + currentDiscoverResults.length + ' results');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadPublishers();
+  await loadMarketplaceStats();
+  updateSavedBadge();
+});
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

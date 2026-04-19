@@ -1,0 +1,19 @@
+name = "attentional-api"
+main = "worker/index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "attentional"
+database_id = "4bede82a-1bf0-453c-a89f-ae8f47b0349e"
+
+# R2 bucket for custom handle avatars uploaded via the admin panel.
+# Create the bucket first:  wrangler r2 bucket create attentional-avatars
+# Enable public access (R2 dashboard → bucket → Settings → "Public access")
+# and set PUBLIC_R2_URL to the resulting r2.dev URL or your custom domain.
+[[r2_buckets]]
+binding = "AVATARS"
+bucket_name = "attentional-avatars"
+
+[vars]
+PUBLIC_R2_URL = "https://pub-2bdae0aa850148678a7ae66a97b75765.r2.dev"

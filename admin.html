@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attentional — Admin Panel</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple: #2d4a6e;
+  --purple-light: #eef2f7;
+  --purple-mid: #4a6d9c;
+  --bg: #f3f5f8;
+  --white: #fff;
+  --text: #1a2535;
+  --muted: #7a8fa6;
+  --border: #d8e2ec;
+  --danger: #e53e3e;
+  --danger-light: #fff1f0;
+  --success: #2e7d32;
+  --success-light: #e8f5e9;
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── NAV ── */
+nav {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  gap: 12px;
+}
+.nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; flex-shrink: 0; }
+.nav-logo-text { font-size: 16px; font-weight: 800; color: var(--text); }
+.nav-admin-badge { background: #1a1a2e; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+.nav-right { display: flex; align-items: center; gap: 8px; }
+.btn-sm { font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer; transition: opacity 0.15s; }
+.btn-sm:hover { opacity: 0.8; }
+.btn-primary { background: var(--purple); color: #fff; }
+.btn-secondary { background: var(--purple-light); color: var(--purple); }
+.btn-danger { background: var(--danger-light); color: var(--danger); }
+.btn-ghost { background: none; border: 1.5px solid var(--border); color: #555; }
+@media(min-width:640px){ nav { padding: 0 24px; height: 60px; } .nav-logo-text { font-size: 17px; } }
+@media(min-width:1024px){ nav { padding: 0 32px; } }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: calc(100vh - 56px); }
+@media(min-width:640px){ .layout { min-height: calc(100vh - 60px); } }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  padding: 20px 12px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 60px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+@media(min-width:900px){ .sidebar { display: flex; } }
+
+.sidebar-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; padding: 4px 8px; margin-top: 8px; }
+.sidebar-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  font-size: 14px; font-weight: 500; color: #555;
+  cursor: pointer; border: none; background: none;
+  text-align: left; width: 100%; transition: all 0.15s;
+}
+.sidebar-link:hover { background: var(--bg); color: var(--text); }
+.sidebar-link.active { background: var(--purple-light); color: var(--purple); font-weight: 700; }
+.sidebar-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.sidebar-count { margin-left: auto; background: var(--border); color: var(--muted); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+.sidebar-link.active .sidebar-count { background: rgba(108,71,255,0.15); color: var(--purple); }
+
+.sidebar-stats { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.stat-row { display: flex; align-items: center; justify-content: space-between; }
+.stat-row-label { font-size: 12px; color: var(--muted); }
+.stat-row-value { font-size: 13px; font-weight: 700; color: var(--text); }
+
+/* ── MAIN ── */
+.main { flex: 1; padding: 20px 16px; min-width: 0; }
+@media(min-width:640px){ .main { padding: 24px; } }
+@media(min-width:1024px){ .main { padding: 28px 32px; } }
+
+/* ── MOBILE NAV TABS ── */
+.mobile-nav { display: flex; overflow-x: auto; gap: 8px; padding: 12px 16px; background: var(--white); border-bottom: 1px solid var(--border); scrollbar-width: none; }
+.mobile-nav::-webkit-scrollbar { display: none; }
+@media(min-width:900px){ .mobile-nav { display: none; } }
+.mobile-nav-btn { flex-shrink: 0; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: var(--bg); color: var(--muted); transition: all 0.15s; }
+.mobile-nav-btn.active { background: var(--purple); color: #fff; }
+
+/* ── SECTION HEADER ── */
+.section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.section-title { font-size: 20px; font-weight: 800; }
+.section-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── STATS CARDS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+@media(min-width:640px){ .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+@media(min-width:1024px){ .stats-grid { grid-template-columns: repeat(6, 1fr); } }
+.stat-card { background: var(--white); border-radius: var(--radius); padding: 16px; }
+.stat-card-value { font-size: 24px; font-weight: 900; letter-spacing: -1px; color: var(--text); }
+.stat-card-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+.stat-card.purple .stat-card-value { color: var(--purple); }
+
+/* ── TABLE CARD ── */
+.table-card { background: var(--white); border-radius: var(--radius); overflow: hidden; }
+.table-toolbar { padding: 14px 16px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.search-box { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: var(--radius-sm); padding: 9px 12px; border: 1.5px solid transparent; transition: border-color 0.15s; flex: 1; min-width: 160px; }
+.search-box:focus-within { border-color: var(--purple); }
+.search-box input { border: none; background: none; font-size: 13px; color: var(--text); outline: none; width: 100%; }
+.filter-select { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 9px 28px 9px 10px; font-size: 12px; color: #555; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-color: var(--bg); }
+.filter-select:focus { outline: none; border-color: var(--purple); }
+
+/* ── RESPONSIVE TABLE ── */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; min-width: 620px; }
+thead th { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 11px 16px; text-align: left; background: #faf9fe; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { font-size: 13px; color: #333; padding: 13px 16px; border-bottom: 1px solid #f5f4fb; vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #fdfcff; }
+.td-brand { display: flex; align-items: center; gap: 10px; }
+.td-logo { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; color: #fff; flex-shrink: 0; }
+.td-logo.food { background: linear-gradient(135deg,#ff6b35,#ff9a5c); }
+.td-logo.pets { background: linear-gradient(135deg,#26c9a8,#4dd9b9); }
+.td-logo.viral { background: linear-gradient(135deg,#ff4d8d,#ff6fa8); }
+.td-logo.news { background: linear-gradient(135deg,#1565c0,#1e88e5); }
+.td-logo.life { background: linear-gradient(135deg,#f59e0b,#fbbf24); }
+.td-logo.ent { background: linear-gradient(135deg,#8b5cf6,#a78bfa); }
+.td-logo.purple { background: linear-gradient(135deg,#2d4a6e,#4a6d9c); }
+.td-logo.green { background: linear-gradient(135deg,#10b981,#34d399); }
+.td-name { font-weight: 700; color: var(--text); font-size: 13px; }
+.td-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge-fb { background: #e8f0fe; color: #1877f2; }
+.badge-ig { background: #fce4ec; color: #c2185b; }
+.badge-active { background: var(--success-light); color: var(--success); }
+.badge-paused { background: #fff8e1; color: #f57c00; }
+.tag { background: var(--purple-light); color: var(--purple); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+.star-btn { font-size: 16px; cursor: pointer; background: none; border: none; padding: 2px 4px; line-height: 1; transition: transform 0.15s; }
+.star-btn:hover { transform: scale(1.3); }
+.star-btn.on { color: #f59e0b; }
+.star-btn.off { color: #ddd; }
+.action-row { display: flex; gap: 6px; }
+
+/* ── MOBILE CARD LIST (for small screens) ── */
+.mobile-card-list { display: flex; flex-direction: column; gap: 10px; }
+@media(min-width:640px){ .mobile-card-list { display: none; } .table-scroll { display: block; } }
+@media(max-width:639px){ .table-scroll { display: none; } .pagination { display: none; } .table-toolbar { flex-wrap: wrap; } }
+.m-card { background: var(--white); border-radius: var(--radius-sm); padding: 14px; display: flex; gap: 12px; align-items: flex-start; border: 1.5px solid transparent; transition: border-color 0.15s; }
+.m-card-info { flex: 1; min-width: 0; }
+.m-card-name { font-size: 14px; font-weight: 700; }
+.m-card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.m-card-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.m-card-followers { font-size: 15px; font-weight: 900; color: var(--text); flex-shrink: 0; }
+.m-card-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+/* ── PAGINATION ── */
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.page-info { font-size: 13px; color: var(--muted); }
+.page-btns { display: flex; gap: 4px; }
+.page-btn { width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--white); cursor: pointer; font-size: 13px; font-weight: 600; color: #555; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.page-btn:hover { border-color: var(--purple); color: var(--purple); }
+.page-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 400; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); }
+.modal-overlay.open { display: flex; }
+@media(min-width:640px){ .modal-overlay { align-items: center; } }
+.modal {
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  animation: slideUp 0.25s cubic-bezier(0.32,0.72,0,1);
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+@media(min-width:640px){
+  .modal { border-radius: 20px; width: 540px; max-height: 88vh; animation: fadeScale 0.2s ease; }
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes fadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 16px; }
+@media(min-width:640px){ .modal-handle { display: none; } }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.modal-title { font-size: 18px; font-weight: 800; }
+.modal-close { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--bg); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: #555; }
+.form-group { margin-bottom: 16px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+.form-input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; font-size: 14px; color: var(--text); outline: none; transition: border-color 0.15s; font-family: inherit; }
+.form-input:focus { border-color: var(--purple); background: var(--white); }
+.form-input::placeholder { color: #bbb; }
+select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-color: var(--bg); }
+.form-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.featured-toggle { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; }
+.toggle-label { font-size: 14px; font-weight: 600; }
+.toggle-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 24px; cursor: pointer; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+input:checked + .toggle-slider { background: var(--purple); }
+input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+/* ── CONFIRM MODAL ── */
+.confirm-modal { background: var(--white); border-radius: 20px; padding: 24px; width: 320px; animation: fadeScale 0.2s ease; text-align: center; }
+.confirm-icon { font-size: 40px; margin-bottom: 12px; }
+.confirm-title { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
+.confirm-sub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 20px; }
+.confirm-actions { display: flex; gap: 10px; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: #fff; padding: 11px 20px; border-radius: 50px; font-size: 13px; font-weight: 600; z-index: 500; transition: transform 0.3s; white-space: nowrap; pointer-events: none; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── SECTION PAGES ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── PUBLISHER CARDS (Publisher section) ── */
+.publisher-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media(min-width:640px){ .publisher-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(min-width:1024px){ .publisher-grid { grid-template-columns: repeat(3, 1fr); } }
+.pub-card { background: var(--white); border-radius: var(--radius); padding: 18px; border: 1.5px solid transparent; transition: border-color 0.15s; }
+.pub-card:hover { border-color: var(--border); }
+.pub-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.pub-logo { width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg, var(--purple), var(--purple-mid)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 16px; flex-shrink: 0; }
+.pub-name { font-size: 15px; font-weight: 800; }
+.pub-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.pub-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.pub-stat { background: var(--bg); border-radius: 8px; padding: 10px; text-align: center; }
+.pub-stat-value { font-size: 16px; font-weight: 800; }
+.pub-stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.pub-card-footer { display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <img src="logo.png" alt="Attentional" style="height:28px;display:block;">
+    <span class="nav-admin-badge">Admin</span>
+  </a>
+  <div class="nav-right"></div>
+</nav>
+
+<!-- MOBILE NAV TABS -->
+<div class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-btn active" onclick="switchView('handles')">📋 All Handles</button>
+  <button class="mobile-nav-btn" onclick="switchView('featured')">🔥 Trending</button>
+  <button class="mobile-nav-btn" onclick="switchView('publishers')">🏢 Publishers</button>
+  <button class="mobile-nav-btn" onclick="switchView('removed')">🗂 Removed</button>
+  <button class="mobile-nav-btn" onclick="switchView('discover')">🔍 Discover</button>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Manage</div>
+    <button class="sidebar-link active" onclick="switchView('handles')"><span class="sidebar-icon">📋</span> All Handles <span class="sidebar-count" id="sc-handles">—</span></button>
+    <button class="sidebar-link" onclick="switchView('featured')"><span class="sidebar-icon">🔥</span> Trending <span class="sidebar-count" id="sc-featured">—</span></button>
+    <button class="sidebar-link" onclick="switchView('publishers')"><span class="sidebar-icon">🏢</span> Publishers <span class="sidebar-count" id="sc-publishers">—</span></button>
+    <button class="sidebar-link" onclick="switchView('removed')"><span class="sidebar-icon">🗂</span> Removed / Paused <span class="sidebar-count" id="sc-removed">—</span></button>
+    <div class="sidebar-label" style="margin-top:12px;">Settings</div>
+    <button class="sidebar-link" onclick="switchView('discover')"><span class="sidebar-icon">🔍</span> Discover Settings</button>
+
+    <div class="sidebar-stats">
+      <div class="stat-row"><span class="stat-row-label">Total reach</span><span class="stat-row-value" id="st-reach">—</span></div>
+      <div class="stat-row"><span class="stat-row-label">Facebook</span><span class="stat-row-value" id="st-fb">—</span></div>
+      <div class="stat-row"><span class="stat-row-label">Instagram</span><span class="stat-row-value" id="st-ig">—</span></div>
+      <div class="stat-row"><span class="stat-row-label">Trending</span><span class="stat-row-value" id="st-featured" style="color:var(--purple);">—</span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ── VIEW: ALL HANDLES ── -->
+    <div id="view-handles" class="view active">
+      <div class="section-head">
+        <div>
+          <div class="section-title">All Handles</div>
+          <div class="section-sub" id="handles-subtitle">Loading…</div>
+        </div>
+        <div class="head-actions">
+          <button class="btn-sm btn-ghost" onclick="showToast('CSV downloaded!')">Export CSV</button>
+          <button class="btn-sm btn-primary" onclick="openModal('handle')">+ Add Handle</button>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-card-value" id="stc-total">—</div><div class="stat-card-label">Total Handles</div></div>
+        <div class="stat-card"><div class="stat-card-value" id="stc-publishers">—</div><div class="stat-card-label">Publishers</div></div>
+        <div class="stat-card purple"><div class="stat-card-value" id="stc-featured">—</div><div class="stat-card-label">Trending</div></div>
+        <div class="stat-card"><div class="stat-card-value" id="stc-fb">—</div><div class="stat-card-label">Facebook</div></div>
+        <div class="stat-card"><div class="stat-card-value" id="stc-ig">—</div><div class="stat-card-label">Instagram</div></div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <span style="color:var(--muted);font-size:13px;">🔍</span>
+            <input type="text" placeholder="Search handles, brands…" oninput="filterHandles(this.value)" id="handles-search">
+          </div>
+          <select class="filter-select" id="filter-platform" onchange="applyHandlesFilter()">
+            <option value="">All Platforms</option>
+            <option value="fb">Facebook</option>
+            <option value="ig">Instagram</option>
+          </select>
+          <select class="filter-select" id="filter-publisher" onchange="applyHandlesFilter()">
+            <option value="">All Publishers</option>
+          </select>
+          <select class="filter-select" id="filter-geo" onchange="applyHandlesFilter()">
+            <option value="">All Geos</option>
+            <option>United States</option>
+            <option>United Kingdom</option>
+            <option>Canada</option>
+            <option>Australia</option>
+            <option>Global</option>
+          </select>
+        </div>
+
+        <!-- Mobile cards -->
+        <div class="mobile-card-list">
+          <div class="m-card">
+            <div class="td-logo food" data-fb-page="tasty">T</div>
+            <div class="m-card-info">
+              <div class="m-card-name">Tasty — @tasty</div>
+              <div class="m-card-sub">BuzzFeed Inc. · 🇺🇸 US</div>
+              <div class="m-card-meta"><span class="badge badge-fb">Facebook</span><span class="tag">Food</span><span class="tag">Recipes</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="openModal('editHandle','tasty')">Edit</button>
+                <button class="btn-sm btn-danger" onclick="openConfirm('Tasty (@tasty)')">Remove</button>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:16px;font-weight:900;">101.9M</div>
+              <button class="star-btn on" onclick="toggleStar(this)" title="Toggle featured">★</button>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo pets" data-fb-page="thedodosite">D</div>
+            <div class="m-card-info">
+              <div class="m-card-name">The Dodo — @thedodo</div>
+              <div class="m-card-sub">Vox Media · 🇺🇸 US</div>
+              <div class="m-card-meta"><span class="badge badge-fb">Facebook</span><span class="tag">Pets</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="openModal('editHandle','dodo')">Edit</button>
+                <button class="btn-sm btn-danger" onclick="openConfirm('The Dodo (@thedodo)')">Remove</button>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:16px;font-weight:900;">52M</div>
+              <button class="star-btn on" onclick="toggleStar(this)">★</button>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo viral" data-fb-page="failarmy">FA</div>
+            <div class="m-card-info">
+              <div class="m-card-name">FailArmy — @failarmy</div>
+              <div class="m-card-sub">Trusted Media Brands · 🇺🇸 US</div>
+              <div class="m-card-meta"><span class="badge badge-fb">Facebook</span><span class="tag">Comedy</span><span class="tag">Viral</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="openModal('editHandle','failarmy')">Edit</button>
+                <button class="btn-sm btn-danger" onclick="openConfirm('FailArmy (@failarmy)')">Remove</button>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:16px;font-weight:900;">26.4M</div>
+              <button class="star-btn on" onclick="toggleStar(this)">★</button>
+            </div>
+          </div>
+          <div style="text-align:center;padding:16px;font-size:13px;color:var(--muted);">Showing 3 of 329 — <a href="#" style="color:var(--purple);font-weight:600;" onclick="showToast('Loading more…');return false;">Load more</a></div>
+        </div>
+
+        <!-- Desktop table -->
+        <div class="table-scroll">
+          <table id="handlesTable">
+            <thead>
+              <tr>
+                <th style="width:40px;">★</th>
+                <th>Brand / Handle</th>
+                <th>Platform</th>
+                <th>Publisher</th>
+                <th>Categories</th>
+                <th>Geo</th>
+                <th>Followers</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="handlesTbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="handles-pagination">
+          <span class="page-info" id="handles-page-info"></span>
+          <div class="page-btns" id="handles-page-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: FEATURED ── -->
+    <div id="view-featured" class="view">
+      <div class="section-head">
+        <div>
+          <div class="section-title">🔥 Trending Handles</div>
+          <div class="section-sub">12 handles shown in the trending section. Click ★ in the handles table to add/remove.</div>
+        </div>
+      </div>
+      <div class="table-card">
+        <!-- Mobile cards -->
+        <div class="mobile-card-list" style="padding:12px;">
+          <div class="m-card">
+            <div class="td-logo food" data-fb-page="tasty">T</div>
+            <div class="m-card-info">
+              <div class="m-card-name">Tasty</div>
+              <div class="m-card-sub">BuzzFeed Inc. · 🇺🇸 US · FB + IG</div>
+              <div class="m-card-meta"><span class="tag">Food</span><span class="tag">Recipes</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-danger" onclick="showToast('Tasty removed from trending')">Remove trending</button>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;"><div class="m-card-followers">146.1M</div></div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo pets" data-fb-page="thedodosite">D</div>
+            <div class="m-card-info">
+              <div class="m-card-name">The Dodo</div>
+              <div class="m-card-sub">Vox Media · 🇺🇸 US · FB + IG</div>
+              <div class="m-card-meta"><span class="tag">Pets</span><span class="tag">Animals</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-danger" onclick="showToast('The Dodo removed from trending')">Remove trending</button>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;"><div class="m-card-followers">64.9M</div></div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo viral" data-fb-page="failarmy">FA</div>
+            <div class="m-card-info">
+              <div class="m-card-name">FailArmy</div>
+              <div class="m-card-sub">Trusted Media Brands · 🇺🇸 US · FB + IG</div>
+              <div class="m-card-meta"><span class="tag">Comedy</span><span class="tag">Viral</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-danger" onclick="showToast('FailArmy removed from trending')">Remove trending</button>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;"><div class="m-card-followers">31.2M</div></div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo news" data-fb-page="dailymail">DM</div>
+            <div class="m-card-info">
+              <div class="m-card-name">Daily Mail</div>
+              <div class="m-card-sub">DailyMail · 🇬🇧 UK · FB + IG</div>
+              <div class="m-card-meta"><span class="tag">News</span><span class="tag">Entertainment</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-danger" onclick="showToast('Daily Mail removed from trending')">Remove trending</button>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;"><div class="m-card-followers">21.4M</div></div>
+          </div>
+          <div style="text-align:center;padding:8px 0 4px;font-size:13px;color:var(--muted);">Showing 4 of 12 trending handles</div>
+        </div>
+        <!-- Desktop table -->
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Brand</th><th>Publisher</th><th>Handles</th><th>Geo</th><th>Total Reach</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="featuredTbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span class="page-info" id="featured-page-info"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: PUBLISHERS ── -->
+    <div id="view-publishers" class="view">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Publishers</div>
+          <div class="section-sub" id="publishers-subtitle">Loading…</div>
+        </div>
+        <div class="head-actions">
+          <button class="btn-sm btn-ghost" onclick="showToast('CSV downloaded!')">Export CSV</button>
+          <button class="btn-sm btn-primary" onclick="openModal('publisher')">+ Add Publisher</button>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <span style="color:var(--muted);font-size:13px;">🔍</span>
+            <input type="text" placeholder="Search publishers…" oninput="filterTable('publishersTable', this.value)">
+          </div>
+          <select class="filter-select" onchange="showToast('Filter applied')">
+            <option value="">All Geos</option>
+            <option>United States</option>
+            <option>United Kingdom</option>
+            <option>Canada</option>
+            <option>Australia</option>
+            <option>Global</option>
+          </select>
+          <select class="filter-select" onchange="showToast('Filter applied')">
+            <option value="">All Statuses</option>
+            <option>Active</option>
+            <option>Paused</option>
+          </select>
+        </div>
+        <!-- Mobile cards -->
+        <div class="mobile-card-list" style="padding:12px;">
+          <div class="m-card">
+            <div class="td-logo purple">BF</div>
+            <div class="m-card-info">
+              <div class="m-card-name">BuzzFeed Inc.</div>
+              <div class="m-card-sub">buzzfeed.com · 🇺🇸 United States</div>
+              <div class="m-card-meta"><span class="badge badge-active">Active</span><span class="tag">48 handles</span><span class="tag">312M reach</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="openModal('editPublisher','buzzfeed')">Edit</button>
+                <button class="btn-sm btn-ghost" onclick="switchView('handles');showToast('Filtered to BuzzFeed')">Handles</button>
+              </div>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo" style="background:linear-gradient(135deg,#26c9a8,#4dd9b9);">VM</div>
+            <div class="m-card-info">
+              <div class="m-card-name">Vox Media</div>
+              <div class="m-card-sub">voxmedia.com · 🇺🇸 United States</div>
+              <div class="m-card-meta"><span class="badge badge-active">Active</span><span class="tag">22 handles</span><span class="tag">98M reach</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="openModal('editPublisher','vox')">Edit</button>
+                <button class="btn-sm btn-ghost" onclick="switchView('handles');showToast('Filtered to Vox Media')">Handles</button>
+              </div>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo" style="background:linear-gradient(135deg,#ff4d8d,#ff6fa8);">TMB</div>
+            <div class="m-card-info">
+              <div class="m-card-name">Trusted Media Brands</div>
+              <div class="m-card-sub">tmbi.com · 🇺🇸 United States</div>
+              <div class="m-card-meta"><span class="badge badge-active">Active</span><span class="tag">18 handles</span><span class="tag">74M reach</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="openModal('editPublisher','tmb')">Edit</button>
+                <button class="btn-sm btn-ghost" onclick="switchView('handles');showToast('Filtered to TMB')">Handles</button>
+              </div>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo" style="background:linear-gradient(135deg,#1565c0,#1e88e5);">DM</div>
+            <div class="m-card-info">
+              <div class="m-card-name">DailyMail</div>
+              <div class="m-card-sub">dailymail.co.uk · 🇬🇧 United Kingdom</div>
+              <div class="m-card-meta"><span class="badge badge-active">Active</span><span class="tag">8 handles</span><span class="tag">41M reach</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="openModal('editPublisher','dm')">Edit</button>
+                <button class="btn-sm btn-ghost" onclick="switchView('handles');showToast('Filtered to DailyMail')">Handles</button>
+              </div>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="td-logo" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">B</div>
+            <div class="m-card-info">
+              <div class="m-card-name">Bustle Digital Group</div>
+              <div class="m-card-sub">bustle.com · 🇺🇸 United States</div>
+              <div class="m-card-meta"><span class="badge badge-active">Active</span><span class="tag">14 handles</span><span class="tag">22M reach</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="openModal('editPublisher','bustle')">Edit</button>
+                <button class="btn-sm btn-ghost" onclick="switchView('handles');showToast('Filtered to Bustle')">Handles</button>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;padding:8px 0 4px;font-size:13px;color:var(--muted);">Showing 5 of 26 · <a href="#" style="color:var(--purple);font-weight:600;" onclick="showToast('Loading more…');return false;">Load more</a></div>
+        </div>
+        <!-- Desktop table -->
+        <div class="table-scroll">
+          <table id="publishersTable">
+            <thead>
+              <tr>
+                <th>Publisher</th>
+                <th>Website</th>
+                <th>Geo</th>
+                <th>Handles</th>
+                <th>Total Reach</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="publishersTbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="publishers-pagination">
+          <span class="page-info" id="publishers-page-info"></span>
+          <div class="page-btns" id="publishers-page-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: REMOVED ── -->
+    <div id="view-removed" class="view">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Removed / Paused</div>
+          <div class="section-sub" id="removed-subtitle">Loading…</div>
+        </div>
+        <button class="btn-sm btn-ghost" onclick="showToast('CSV downloaded!')">Export CSV</button>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <span style="color:var(--muted);font-size:13px;">🔍</span>
+            <input type="text" placeholder="Search removed handles…" oninput="filterRemoved(this.value)">
+          </div>
+          <select class="filter-select">
+            <option>All Platforms</option>
+            <option>Facebook</option>
+            <option>Instagram</option>
+          </select>
+        </div>
+        <!-- Mobile cards -->
+        <div class="mobile-card-list" style="padding:12px;">
+          <div class="m-card">
+            <div class="td-logo purple">EX</div>
+            <div class="m-card-info">
+              <div class="m-card-name">Example Brand — @examplebrand</div>
+              <div class="m-card-sub">Bustle · 🇺🇸 US · Contract expired</div>
+              <div class="m-card-meta"><span class="badge badge-fb">Facebook</span><span class="badge badge-paused">Paused</span></div>
+              <div class="m-card-actions">
+                <button class="btn-sm btn-secondary" onclick="showToast('Example Brand restored!')">Restore</button>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;"><div class="m-card-followers">450K</div></div>
+          </div>
+          <div style="text-align:center;padding:8px 0 4px;font-size:13px;color:var(--muted);">836 archived handles — <a href="#" style="color:var(--purple);font-weight:600;" onclick="showToast('Loading…');return false;">Load more</a></div>
+        </div>
+        <!-- Desktop table -->
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Brand / Handle</th><th>Platform</th><th>Publisher</th><th>Geo</th><th>Followers</th><th>Status</th><th>Notes</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="removedTbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="removed-pagination">
+          <span class="page-info" id="removed-page-info"></span>
+          <div class="page-btns" id="removed-page-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: DISCOVER SETTINGS ── -->
+    <div id="view-discover" class="view">
+      <div class="section-head">
+        <div>
+          <div class="section-title">🔍 Discover Settings</div>
+          <div class="section-sub">Control how publisher recommendations are generated for advertisers</div>
+        </div>
+        <button class="btn-sm btn-primary" onclick="saveDiscoverSettings()">Save Settings</button>
+      </div>
+
+      <!-- Result Count -->
+      <div class="table-card" style="padding:20px;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Results Per Analysis</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">How many publisher matches to show each advertiser (default: 10, max: 50)</div>
+        <input type="number" id="ds-result-count" min="1" max="50" value="10"
+          style="width:100px;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;background:var(--bg);color:var(--text);outline:none;">
+      </div>
+
+      <!-- Pinned Publishers -->
+      <div class="table-card" style="padding:20px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Pinned Publishers</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">These publishers always appear in every advertiser's results, shuffled into random positions so the order looks organic.</div>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div class="search-box" style="flex:1;">
+            <span style="color:var(--muted);font-size:13px;">🔍</span>
+            <input type="text" id="ds-brand-search" placeholder="Search publishers to pin…" oninput="searchDiscoverBrands(this.value)" autocomplete="off">
+          </div>
+        </div>
+        <div id="ds-brand-results" style="display:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--white);max-height:220px;overflow-y:auto;margin-bottom:16px;"></div>
+
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Currently Pinned</div>
+        <div id="ds-pinned-list">
+          <div style="font-size:13px;color:var(--muted);padding:12px 0;">No publishers pinned yet</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════
+     MODAL: ADD / EDIT HANDLE
+═══════════════════════════ -->
+<div class="modal-overlay" id="handleModal" onclick="if(event.target===this)closeModal('handleModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="handleModalTitle">Add Handle</div>
+      <button class="modal-close" onclick="closeModal('handleModal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Handle Name</label>
+        <input class="form-input" type="text" placeholder="@tasty" id="f-handle">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Platform</label>
+        <select class="form-input" id="f-platform">
+          <option>Facebook</option>
+          <option>Instagram</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Brand Name</label>
+        <input class="form-input" type="text" placeholder="Tasty" id="f-brand">
+        <div class="form-hint">Do not include .com — it breaks logo lookup</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Publisher</label>
+        <select class="form-input" id="f-publisher">
+          <option value="">Select publisher…</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Profile URL</label>
+      <input class="form-input" type="url" placeholder="https://www.facebook.com/tasty" id="f-url">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categories</label>
+      <input class="form-input" type="text" placeholder="Food, Recipes, Cooking" id="f-categories">
+      <div class="form-hint">Comma-separated</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Followers</label>
+        <input class="form-input" type="number" placeholder="101900000" id="f-followers">
+        <div class="form-hint">Use 1000 for anything under 1,000</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Geography</label>
+        <select class="form-input" id="f-geo">
+          <option>United States</option>
+          <option>United Kingdom</option>
+          <option>Canada</option>
+          <option>Australia</option>
+          <option>Global</option>
+          <option>Europe</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Associated Property URL</label>
+      <input class="form-input" type="text" placeholder="tasty.co" id="f-property">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Custom Avatar (overrides FB/IG)</label>
+      <input class="form-input" type="url" placeholder="https://… (paste URL or upload below)" id="f-custom-img">
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+        <input type="file" id="f-custom-img-file" accept="image/png,image/jpeg,image/webp,image/gif" style="flex:1;">
+        <button type="button" class="btn-sm btn-secondary" onclick="uploadCustomAvatar()">Upload</button>
+        <button type="button" class="btn-sm btn-ghost" onclick="document.getElementById('f-custom-img').value='';">Clear</button>
+      </div>
+      <div class="form-hint" id="f-custom-img-hint">Used when FB/IG sources don't return a real avatar. 5 MB max.</div>
+      <div id="f-custom-img-preview" style="margin-top:8px;"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Trending</label>
+      <div class="featured-toggle">
+        <div>
+          <div class="toggle-label">Show in Trending section</div>
+          <div class="toggle-sub">Sets Priority to 1 — appears in top of advertiser catalog</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="f-featured">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('handleModal')">Cancel</button>
+      <button class="btn-sm btn-primary" onclick="saveHandle()">Save Handle</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════
+     MODAL: ADD PUBLISHER
+═══════════════════════════ -->
+<div class="modal-overlay" id="publisherModal" onclick="if(event.target===this)closeModal('publisherModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="publisherModalTitle">Add Publisher</div>
+      <button class="modal-close" onclick="closeModal('publisherModal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Publisher Name</label>
+        <input class="form-input" type="text" placeholder="BuzzFeed Inc." id="p-name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Website</label>
+        <input class="form-input" type="text" placeholder="buzzfeed.com" id="p-website">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Geography</label>
+      <select class="form-input" id="p-geo">
+        <option>United States</option>
+        <option>United Kingdom</option>
+        <option>Canada</option>
+        <option>Australia</option>
+        <option>Global</option>
+        <option>Europe</option>
+        <option>Asia-Pacific</option>
+        <option>Latin America</option>
+      </select>
+      <div class="form-hint">Primary market for this publisher's audience</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Primary Category</label>
+        <select class="form-input" id="p-category">
+          <option>Entertainment</option>
+          <option>Food</option>
+          <option>News</option>
+          <option>Lifestyle</option>
+          <option>Pets</option>
+          <option>Comedy</option>
+          <option>Sports</option>
+          <option>Technology</option>
+          <option>Health</option>
+          <option>Fashion</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-input" id="p-status">
+          <option>Active</option>
+          <option>Paused</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cover Image URL</label>
+      <input class="form-input" type="url" placeholder="https://example.com/cover.jpg" id="p-cover">
+      <div class="form-hint">Used as background on featured cards. Leave blank to use default gradient.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-input" rows="3" placeholder="Any notes about this publisher, contract details, etc." id="p-notes" style="resize:vertical;"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('publisherModal')">Cancel</button>
+      <button class="btn-sm btn-primary" onclick="savePublisher()">Save Publisher</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════
+     CONFIRM MODAL
+═══════════════════════════ -->
+<div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeModal('confirmModal')">
+  <div class="confirm-modal">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Remove handle?</div>
+    <div class="confirm-sub" id="confirmText">This will move the handle to the Removed / Paused archive. You can restore it later.</div>
+    <div class="confirm-actions">
+      <button class="btn-sm btn-ghost" style="flex:1;" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn-sm btn-danger" style="flex:1;" onclick="confirmRemove()">Yes, remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── API config ──
+// When running locally with wrangler dev: change to 'http://localhost:8787'
+// After deploying Worker: change to your Worker URL
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8787'
+  : 'https://attentional-api.accounts-35d.workers.dev';
+
+// ── State ──
+let currentPage   = { handles: 1, publishers: 1, removed: 1 };
+let currentFilter = { q: '', platform: '', publisher_id: '', geo: '' };
+let currentConfirmId   = null;
+let currentConfirmName = '';
+let searchDebounce = null;
+
+// ── Helpers ──
+function formatFollowers(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return String(n);
+}
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase();
+}
+function categoryToTheme(cats) {
+  if (!cats || !cats.length) return '';
+  const c = cats[0].toLowerCase();
+  if (c.includes('food') || c.includes('recipe') || c.includes('cook')) return 'food';
+  if (c.includes('pet') || c.includes('animal')) return 'pets';
+  if (c.includes('comedy') || c.includes('viral') || c.includes('fail') || c.includes('ugc')) return 'viral';
+  if (c.includes('news') || c.includes('politics')) return 'news';
+  if (c.includes('life') || c.includes('home') || c.includes('nostalgia')) return 'life';
+  if (c.includes('fashion') || c.includes('beauty')) return 'ent';
+  if (c.includes('market') || c.includes('advertis') || c.includes('business')) return 'ent';
+  return 'purple';
+}
+function geoFlag(geo) {
+  if (!geo) return '';
+  if (geo.includes('United States')) return '🇺🇸';
+  if (geo.includes('United Kingdom')) return '🇬🇧';
+  if (geo.includes('Canada')) return '🇨🇦';
+  if (geo.includes('Australia')) return '🇦🇺';
+  return '🌐';
+}
+function renderPagination(meta, prefix) {
+  const info = document.getElementById(prefix + '-page-info');
+  const btns = document.getElementById(prefix + '-page-btns');
+  if (!info || !btns) return;
+  const start = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
+  const end   = Math.min(meta.page * meta.limit, meta.total);
+  info.textContent = meta.total === 0 ? 'No results' : `Showing ${start}–${end} of ${meta.total}`;
+  if (meta.pages <= 1) { btns.innerHTML = ''; return; }
+  let html = `<button class="page-btn" ${meta.page===1?'disabled':''} onclick="gotoPage('${prefix}',${meta.page-1})">‹</button>`;
+  for (let p = 1; p <= meta.pages; p++) {
+    if (meta.pages > 7 && p > 2 && p < meta.pages - 1 && Math.abs(p - meta.page) > 1) {
+      if (p === 3 || p === meta.pages - 2) html += `<span style="padding:0 4px;color:var(--muted);align-self:center;">…</span>`;
+      continue;
+    }
+    html += `<button class="page-btn${p===meta.page?' active':''}" onclick="gotoPage('${prefix}',${p})">${p}</button>`;
+  }
+  html += `<button class="page-btn" ${meta.page===meta.pages?'disabled':''} onclick="gotoPage('${prefix}',${meta.page+1})">›</button>`;
+  btns.innerHTML = html;
+}
+function gotoPage(prefix, page) {
+  currentPage[prefix] = page;
+  if (prefix === 'handles')    loadHandlesTable(page);
+  if (prefix === 'publishers') loadPublishersTable(page);
+  if (prefix === 'removed')    loadRemovedTable(page);
+}
+
+// ── Load stats ──
+async function loadStats() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/stats`);
+    const data = await res.json();
+    const set  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('sc-handles',    data.active_handles);
+    set('sc-featured',   data.featured_count);
+    set('sc-publishers', data.publisher_count);
+    set('sc-removed',    (data.removed_handles || 0) + (data.paused_handles || 0));
+    set('st-reach',      formatFollowers(data.total_reach));
+    set('st-fb',         data.fb_count);
+    set('st-ig',         data.ig_count);
+    set('st-featured',   data.featured_count);
+    set('stc-total',     data.active_handles);
+    set('stc-publishers',data.publisher_count);
+    set('stc-featured',  data.featured_count);
+    set('stc-fb',        data.fb_count);
+    set('stc-ig',        data.ig_count);
+    const sub = document.getElementById('handles-subtitle');
+    if (sub) sub.textContent = `${data.active_handles} handles`;
+  } catch(e) { console.warn('Stats load failed', e); }
+}
+
+// ── Load handles table ──
+async function loadHandlesTable(page = 1) {
+  currentPage.handles = page;
+  const params = new URLSearchParams({ page, limit: 25, status: 'all' });
+  if (currentFilter.q)            params.set('q', currentFilter.q);
+  if (currentFilter.platform)     params.set('platform', currentFilter.platform);
+  if (currentFilter.publisher_id) params.set('publisher_id', currentFilter.publisher_id);
+  if (currentFilter.geo)          params.set('geo', currentFilter.geo);
+
+  try {
+    const res  = await fetch(`${API_BASE}/api/handles?${params}`);
+    const json = await res.json();
+    const tbody = document.getElementById('handlesTbody');
+    if (!json.data || !json.data.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);">No handles found</td></tr>';
+    } else {
+      tbody.innerHTML = json.data.map(h => {
+        const theme = categoryToTheme(h.categories);
+        const init  = initials(h.brand_name);
+        const cats  = h.categories.slice(0,2).map(c => `<span class="tag">${c}</span>`).join(' ');
+        const flag  = geoFlag(h.geography);
+        return `<tr>
+          <td><button class="star-btn ${h.featured?'on':'off'}" data-id="${h.id}" data-featured="${h.featured}" onclick="toggleStar(this)">★</button></td>
+          <td><div class="td-brand" data-profile-url="${h.profile_url||''}" data-platform="${h.platform}" data-handle-name="${h.handle_name||''}" data-brand-name="${(h.brand_name||'').replace(/"/g,'&quot;')}" data-custom-img="${h.custom_image_url||''}"><div class="td-logo ${theme}">${init}</div><div><div class="td-name">${h.brand_name}</div><div class="td-sub">${h.handle_name}</div></div></div></td>
+          <td><span class="badge badge-${h.platform}">${h.platform==='fb'?'Facebook':'Instagram'}</span></td>
+          <td>${h.publisher_name||''}</td>
+          <td>${cats}</td>
+          <td>${flag} ${h.geography||''}</td>
+          <td style="font-weight:800;">${formatFollowers(h.followers)}</td>
+          <td><span class="badge badge-${h.status}">${h.status.charAt(0).toUpperCase()+h.status.slice(1)}</span></td>
+          <td><div class="action-row">
+            <button class="btn-sm btn-secondary" onclick="openModal('editHandle',${h.id})">Edit</button>
+            <button class="btn-sm btn-danger" onclick="openConfirm('${h.brand_name} (${h.handle_name})',${h.id})">Remove</button>
+          </div></td>
+        </tr>`;
+      }).join('');
+    }
+    renderPagination(json.meta, 'handles');
+    loadAdminBrandImages();
+  } catch(e) {
+    console.error('loadHandlesTable failed', e);
+    showToast('Error loading handles — is the Worker running?');
+  }
+}
+
+// ── Load featured table ──
+async function loadFeaturedTable() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/featured`);
+    const json = await res.json();
+    const tbody = document.getElementById('featuredTbody');
+    const info  = document.getElementById('featured-page-info');
+    if (!json.data || !json.data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">No trending handles</td></tr>';
+      if (info) info.textContent = '0 trending brands';
+      return;
+    }
+    tbody.innerHTML = json.data.map(b => {
+      const theme   = categoryToTheme(b.categories);
+      const init    = initials(b.brand_name);
+      const handles = b.handles.map(h => h.platform.toUpperCase()).join(' + ');
+      const fbHandle = b.handles.find(h => h.platform === 'fb') || b.handles[0] || {};
+      return `<tr>
+        <td><div class="td-brand" data-profile-url="${fbHandle.profile_url||''}" data-platform="${fbHandle.platform||''}" data-handle-name="${fbHandle.handle_name||''}"><div class="td-logo ${theme}">${init}</div><div><div class="td-name">${b.brand_name}</div></div></div></td>
+        <td>${b.publisher_name}</td>
+        <td>${handles}</td>
+        <td>${b.geography}</td>
+        <td style="font-weight:800;">${formatFollowers(b.total_reach)}</td>
+        <td><button class="btn-sm btn-danger" onclick="removeFeaturedBrand('${b.brand_key}',this)">Remove trending</button></td>
+      </tr>`;
+    }).join('');
+    if (info) info.textContent = `${json.data.length} trending brand${json.data.length!==1?'s':''}`;
+    loadAdminBrandImages();
+  } catch(e) { console.error('loadFeaturedTable failed', e); }
+}
+
+async function removeFeaturedBrand(brandKey, btn) {
+  const tbody = document.getElementById('handlesTbody');
+  try {
+    const res  = await fetch(`${API_BASE}/api/handles?q=${encodeURIComponent(brandKey)}&status=active&limit=25`);
+    const json = await res.json();
+    const handle = json.data && json.data.find(h => h.brand_name.toLowerCase().replace(/[^a-z0-9]+/g,'') === brandKey);
+    if (handle) {
+      await fetch(`${API_BASE}/api/handles/${handle.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({featured:false}) });
+    }
+    showToast('Removed from trending');
+    loadFeaturedTable();
+    loadStats();
+  } catch(e) { showToast('Error removing trending'); }
+}
+
+// ── Load publishers table ──
+async function loadPublishersTable(page = 1) {
+  currentPage.publishers = page;
+  try {
+    const res  = await fetch(`${API_BASE}/api/publishers?page=${page}&limit=25`);
+    const json = await res.json();
+    const tbody = document.getElementById('publishersTbody');
+    const sub   = document.getElementById('publishers-subtitle');
+    if (sub && json.meta) sub.textContent = `${json.meta.total} publishing compan${json.meta.total===1?'y':'ies'}`;
+    if (!json.data || !json.data.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">No publishers found</td></tr>';
+    } else {
+      tbody.innerHTML = json.data.map(p => {
+        const init  = initials(p.name);
+        const flag  = geoFlag(p.geography);
+        return `<tr>
+          <td><div class="td-brand"><div class="td-logo purple">${init}</div><div><div class="td-name">${p.name}</div><div class="td-sub">${p.primary_category||''}</div></div></div></td>
+          <td style="color:var(--purple);font-size:12px;">${p.website||''}</td>
+          <td>${flag} ${p.geography||''}</td>
+          <td style="font-weight:800;">${p.handle_count||0}</td>
+          <td style="font-weight:800;">${formatFollowers(p.total_reach||0)}</td>
+          <td><span class="badge badge-${p.status}">${p.status.charAt(0).toUpperCase()+p.status.slice(1)}</span></td>
+          <td><div class="action-row">
+            <button class="btn-sm btn-secondary" onclick="openModal('editPublisher',${p.id})">Edit</button>
+            <button class="btn-sm btn-ghost" onclick="switchView('handles');filterByPublisher(${p.id},'${p.name}')">Handles</button>
+          </div></td>
+        </tr>`;
+      }).join('');
+    }
+    renderPagination(json.meta, 'publishers');
+  } catch(e) { console.error('loadPublishersTable failed', e); }
+}
+function filterByPublisher(id, name) {
+  currentFilter.publisher_id = id;
+  document.getElementById('filter-publisher').value = id;
+  loadHandlesTable(1);
+  showToast(`Filtered to ${name}`);
+}
+
+// ── Load removed table ──
+async function loadRemovedTable(page = 1) {
+  currentPage.removed = page;
+  const q = document.querySelector('#view-removed .search-box input')?.value || '';
+  try {
+    const params = new URLSearchParams({ page, limit: 25 });
+    if (q) params.set('q', q);
+    const res  = await fetch(`${API_BASE}/api/removed?${params}`);
+    const json = await res.json();
+    const tbody = document.getElementById('removedTbody');
+    const sub   = document.getElementById('removed-subtitle');
+    if (sub && json.meta) sub.textContent = `${json.meta.total} archived handle${json.meta.total!==1?'s':''}`;
+    if (!json.data || !json.data.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);">No archived handles</td></tr>';
+    } else {
+      tbody.innerHTML = json.data.map(h => {
+        const theme = categoryToTheme(h.categories);
+        const init  = initials(h.brand_name);
+        const flag  = geoFlag(h.geography);
+        return `<tr>
+          <td><div class="td-brand" data-profile-url="${h.profile_url||''}" data-platform="${h.platform}" data-handle-name="${h.handle_name||''}" data-brand-name="${(h.brand_name||'').replace(/"/g,'&quot;')}" data-custom-img="${h.custom_image_url||''}"><div class="td-logo ${theme}">${init}</div><div><div class="td-name">${h.brand_name}</div><div class="td-sub">${h.handle_name}</div></div></div></td>
+          <td><span class="badge badge-${h.platform}">${h.platform==='fb'?'Facebook':'Instagram'}</span></td>
+          <td>${h.publisher_name||''}</td>
+          <td>${flag} ${h.geography||''}</td>
+          <td style="font-weight:800;">${formatFollowers(h.followers)}</td>
+          <td><span class="badge badge-${h.status}">${h.status.charAt(0).toUpperCase()+h.status.slice(1)}</span></td>
+          <td style="font-size:12px;color:var(--muted);">${h.removal_reason||''}</td>
+          <td><button class="btn-sm btn-secondary" onclick="restoreHandle(${h.id},'${h.brand_name}')">Restore</button></td>
+        </tr>`;
+      }).join('');
+    }
+    renderPagination(json.meta, 'removed');
+  } catch(e) { console.error('loadRemovedTable failed', e); }
+}
+function filterRemoved(q) {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => loadRemovedTable(1), 300);
+}
+async function restoreHandle(id, name) {
+  try {
+    await fetch(`${API_BASE}/api/handles/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status:'active', removal_reason:null, removal_notes:null }) });
+    showToast(`${name} restored!`);
+    loadRemovedTable(currentPage.removed);
+    loadHandlesTable(currentPage.handles);
+    loadStats();
+  } catch(e) { showToast('Error restoring handle'); }
+}
+
+// ── Populate publisher dropdowns ──
+async function populatePublisherSelect() {
+  try {
+    const res   = await fetch(`${API_BASE}/api/publishers?limit=100`);
+    const json  = await res.json();
+    const opts  = json.data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    // Handle form publisher select
+    const fPub = document.getElementById('f-publisher');
+    if (fPub) fPub.innerHTML = `<option value="">Select publisher…</option>${opts}`;
+    // Filter dropdown
+    const filt = document.getElementById('filter-publisher');
+    if (filt) filt.innerHTML = `<option value="">All Publishers</option>${opts}`;
+  } catch(e) { console.warn('populatePublisherSelect failed', e); }
+}
+
+// ── View switching ──
+function switchView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+  const managedViews = ['handles','featured','publishers','removed'];
+  const idx = managedViews.indexOf(id);
+  if (idx > -1) {
+    document.querySelectorAll('.sidebar-link')[idx]?.classList.add('active');
+    document.querySelectorAll('.mobile-nav-btn')[idx]?.classList.add('active');
+  } else {
+    // Settings section links (after managed views)
+    const settingsLinks = document.querySelectorAll('.sidebar-link');
+    settingsLinks.forEach(l => { if (l.getAttribute('onclick')?.includes(`'${id}'`)) l.classList.add('active'); });
+    const mobileLinks = document.querySelectorAll('.mobile-nav-btn');
+    mobileLinks.forEach(b => { if (b.getAttribute('onclick')?.includes(`'${id}'`)) b.classList.add('active'); });
+  }
+  window.scrollTo(0,0);
+  if (id === 'handles')    loadHandlesTable(currentPage.handles);
+  if (id === 'featured')   loadFeaturedTable();
+  if (id === 'publishers') loadPublishersTable(currentPage.publishers);
+  if (id === 'removed')    loadRemovedTable(currentPage.removed);
+  if (id === 'discover')   loadDiscoverSettings();
+}
+
+// ── Handle filter ──
+function applyHandlesFilter() {
+  currentFilter.platform     = document.getElementById('filter-platform')?.value || '';
+  currentFilter.publisher_id = document.getElementById('filter-publisher')?.value || '';
+  currentFilter.geo          = document.getElementById('filter-geo')?.value || '';
+  loadHandlesTable(1);
+}
+function filterHandles(q) {
+  currentFilter.q = q;
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => loadHandlesTable(1), 300);
+}
+
+// ── Modals ──
+async function openModal(type, id) {
+  if (type === 'handle') {
+    document.getElementById('handleModalTitle').textContent = 'Add Handle';
+    ['f-handle','f-brand','f-url','f-categories','f-followers','f-property','f-custom-img'].forEach(i => {
+      const el = document.getElementById(i); if (el) el.value = '';
+    });
+    const ff = document.getElementById('f-custom-img-file'); if (ff) ff.value = '';
+    document.getElementById('f-featured').checked = false;
+    renderCustomAvatarPreview();
+    document.getElementById('handleModal').dataset.editId = '';
+    document.getElementById('handleModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  } else if (type === 'editHandle') {
+    try {
+      const res  = await fetch(`${API_BASE}/api/handles/${id}`);
+      const d    = await res.json();
+      document.getElementById('handleModalTitle').textContent = 'Edit Handle';
+      document.getElementById('f-handle').value     = d.handle_name || '';
+      document.getElementById('f-brand').value      = d.brand_name  || '';
+      document.getElementById('f-url').value        = d.profile_url || '';
+      document.getElementById('f-categories').value = (d.categories||[]).join(', ');
+      document.getElementById('f-followers').value  = d.followers   || '';
+      document.getElementById('f-property').value   = d.property_url|| '';
+      document.getElementById('f-featured').checked = d.featured;
+      document.getElementById('f-custom-img').value = d.custom_image_url || '';
+      renderCustomAvatarPreview();
+      const geo = document.getElementById('f-geo');
+      if (geo) { [...geo.options].forEach(o => { o.selected = o.value === d.geography; }); }
+      const plat = document.getElementById('f-platform');
+      if (plat) { [...plat.options].forEach(o => { o.selected = (d.platform==='fb'?'Facebook':'Instagram') === o.value; }); }
+      const pub = document.getElementById('f-publisher');
+      if (pub) pub.value = d.publisher_id || '';
+      document.getElementById('handleModal').dataset.editId = id;
+      document.getElementById('handleModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    } catch(e) { showToast('Error loading handle data'); }
+  } else if (type === 'publisher' || type === 'editPublisher') {
+    document.getElementById('publisherModalTitle').textContent = type === 'publisher' ? 'Add Publisher' : 'Edit Publisher';
+    if (type === 'editPublisher') {
+      try {
+        const res = await fetch(`${API_BASE}/api/publishers/${id}`);
+        const d   = await res.json();
+        document.getElementById('p-name').value    = d.name    || '';
+        document.getElementById('p-website').value = d.website || '';
+        document.getElementById('p-notes').value   = d.notes   || '';
+        document.getElementById('publisherModal').dataset.editId = id;
+      } catch(e) { showToast('Error loading publisher data'); }
+    } else {
+      document.getElementById('p-name').value    = '';
+      document.getElementById('p-website').value = '';
+      document.getElementById('p-notes').value   = '';
+      document.getElementById('publisherModal').dataset.editId = '';
+    }
+    document.getElementById('publisherModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function saveHandle() {
+  const modal  = document.getElementById('handleModal');
+  const editId = modal.dataset.editId;
+  const platVal = document.getElementById('f-platform').value;
+  const body = {
+    handle_name:  document.getElementById('f-handle').value.trim(),
+    brand_name:   document.getElementById('f-brand').value.trim(),
+    platform:     platVal === 'Facebook' ? 'fb' : 'ig',
+    publisher_id: parseInt(document.getElementById('f-publisher').value) || null,
+    profile_url:  document.getElementById('f-url').value.trim() || null,
+    categories:   document.getElementById('f-categories').value.split(',').map(s=>s.trim()).filter(Boolean),
+    followers:    parseInt(document.getElementById('f-followers').value) || 0,
+    geography:    document.getElementById('f-geo').value,
+    property_url: document.getElementById('f-property').value.trim() || null,
+    featured:     document.getElementById('f-featured').checked,
+    custom_image_url: document.getElementById('f-custom-img').value.trim() || null,
+  };
+  if (!body.handle_name || !body.brand_name || !body.publisher_id) {
+    showToast('Handle name, brand name, and publisher are required');
+    return;
+  }
+  try {
+    const url    = editId ? `${API_BASE}/api/handles/${editId}` : `${API_BASE}/api/handles`;
+    const method = editId ? 'PUT' : 'POST';
+    const res    = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast(err.error || 'Error saving handle');
+      return;
+    }
+    closeModal('handleModal');
+    showToast(editId ? 'Handle updated!' : 'Handle added!');
+    loadHandlesTable(currentPage.handles);
+    loadStats();
+  } catch(e) { showToast('Network error saving handle'); }
+}
+
+async function uploadCustomAvatar() {
+  const fileInput = document.getElementById('f-custom-img-file');
+  const file = fileInput?.files?.[0];
+  const hint = document.getElementById('f-custom-img-hint');
+  if (!file) { showToast('Pick a file first'); return; }
+  hint.textContent = `Uploading ${file.name}…`;
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      hint.textContent = `Upload failed: ${data.error || res.status}`;
+      return;
+    }
+    document.getElementById('f-custom-img').value = data.url;
+    hint.textContent = 'Uploaded — Save Handle to apply.';
+    renderCustomAvatarPreview();
+  } catch(e) {
+    hint.textContent = 'Network error during upload';
+  }
+}
+function renderCustomAvatarPreview() {
+  const url = document.getElementById('f-custom-img').value.trim();
+  const box = document.getElementById('f-custom-img-preview');
+  if (!box) return;
+  box.innerHTML = url
+    ? `<img src="${url}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid var(--border);" onerror="this.style.opacity=0.3;this.title='Image failed to load';">`
+    : '';
+}
+document.addEventListener('input', e => {
+  if (e.target?.id === 'f-custom-img') renderCustomAvatarPreview();
+});
+
+async function savePublisher() {
+  const modal  = document.getElementById('publisherModal');
+  const editId = modal.dataset.editId;
+  const body = {
+    name:             document.getElementById('p-name').value.trim(),
+    website:          document.getElementById('p-website').value.trim() || null,
+    geography:        document.getElementById('p-geo').value,
+    primary_category: document.getElementById('p-category').value,
+    status:           document.getElementById('p-status').value.toLowerCase(),
+    cover_image_url:  document.getElementById('p-cover').value.trim() || null,
+    notes:            document.getElementById('p-notes').value.trim() || null,
+  };
+  if (!body.name) { showToast('Publisher name is required'); return; }
+  try {
+    const url    = editId ? `${API_BASE}/api/publishers/${editId}` : `${API_BASE}/api/publishers`;
+    const method = editId ? 'PUT' : 'POST';
+    const res    = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) { showToast('Error saving publisher'); return; }
+    closeModal('publisherModal');
+    showToast('Publisher saved!');
+    loadPublishersTable(currentPage.publishers);
+    populatePublisherSelect();
+    loadStats();
+  } catch(e) { showToast('Network error saving publisher'); }
+}
+
+function openConfirm(name, id) {
+  currentConfirmName = name;
+  currentConfirmId   = id;
+  document.getElementById('confirmText').textContent = `"${name}" will be moved to the Removed / Paused archive. You can restore it at any time.`;
+  document.getElementById('confirmModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+async function confirmRemove() {
+  if (!currentConfirmId) { closeModal('confirmModal'); return; }
+  try {
+    await fetch(`${API_BASE}/api/handles/${currentConfirmId}`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status: 'removed', removal_reason: 'Manually removed' }),
+    });
+    closeModal('confirmModal');
+    showToast(`${currentConfirmName} moved to archive`);
+    loadHandlesTable(currentPage.handles);
+    loadStats();
+  } catch(e) { showToast('Error removing handle'); }
+}
+
+// ── Star toggle ──
+async function toggleStar(btn) {
+  const id       = parseInt(btn.dataset.id);
+  const featured = btn.dataset.featured === 'true';
+  try {
+    const res = await fetch(`${API_BASE}/api/handles/${id}`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ featured: !featured }),
+    });
+    if (!res.ok) { showToast('Error updating trending'); return; }
+    btn.dataset.featured = String(!featured);
+    btn.classList.toggle('on',  !featured);
+    btn.classList.toggle('off', featured);
+    showToast(featured ? 'Removed from trending' : 'Added to trending 🔥');
+    loadStats();
+  } catch(e) { showToast('Network error'); }
+}
+
+// ── Brand logo image loader ──
+// Uses facebook Graph API picture endpoint. Only reliable for FB pages —
+// derives the page slug from profile_url (not the handle), since IG and FB slugs often differ.
+function fbSlugFromUrl(url) {
+  if (!url) return null;
+  const m = String(url).match(/facebook\.com\/([^\/?#]+)/i);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function igSlugFromUrl(url) {
+  if (!url) return null;
+  const m = String(url).match(/instagram\.com\/([^\/?#]+)/i);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+// Cache of brand_key → { fbSlug } so IG rows can fall back to their FB sibling
+// when unavatar can't get the real IG profile pic.
+let _brandSiblingIndex = null;
+async function getBrandSiblingIndex() {
+  if (_brandSiblingIndex) return _brandSiblingIndex;
+  _brandSiblingIndex = {};
+  try {
+    const res  = await fetch(`${API_BASE}/api/featured?all=1`);
+    const json = await res.json();
+    (json.data || []).forEach(b => {
+      const fbHandle = b.handles.find(h => h.platform === 'fb');
+      if (fbHandle) {
+        const slug = fbSlugFromUrl(fbHandle.profile_url);
+        if (slug) _brandSiblingIndex[b.brand_key] = { fbSlug: slug };
+      }
+    });
+  } catch(_) {}
+  return _brandSiblingIndex;
+}
+// Best-effort brand_key derivation matching worker's normalization:
+// lowercase, strip non-alphanumerics. (See worker/routes/featured.js → brandKey)
+function brandKey(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+async function loadAdminBrandImages() {
+  const sibIndex = await getBrandSiblingIndex();
+  document.querySelectorAll('.td-brand').forEach(row => {
+    if (row._imgLoaded) return;
+    const logo = row.querySelector('[class*="td-logo"]');
+    if (!logo) return;
+    const platform   = row.dataset.platform;
+    const profileUrl = row.dataset.profileUrl;
+    const handleName = row.dataset.handleName || '';
+    const brandName  = row.dataset.brandName  || '';
+    const customImg  = row.dataset.customImg  || '';
+
+    const chain = [];
+    if (customImg) chain.push(customImg);
+    if (platform === 'ig') {
+      // Prefer FB sibling first (same logic as advertiser view) — FB Graph is
+      // more reliable than unavatar for brands that have an FB page.
+      const sib = sibIndex[brandKey(brandName)];
+      if (sib?.fbSlug) chain.push(`https://graph.facebook.com/${sib.fbSlug}/picture?type=square`);
+      const igSlug = igSlugFromUrl(profileUrl) || handleName.replace(/^@/, '');
+      if (igSlug) chain.push(`${API_BASE}/api/avatar/ig/${encodeURIComponent(igSlug)}`);
+    } else if (platform === 'fb') {
+      const slug = fbSlugFromUrl(profileUrl);
+      if (slug) chain.push(`https://graph.facebook.com/${slug}/picture?type=square`);
+    }
+    if (!chain.length) return;
+
+    const fallbackHTML  = logo.innerHTML;
+    const fallbackStyle = logo.getAttribute('style') || '';
+    const img = document.createElement('img');
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;';
+    let i = 0;
+    img.onerror = () => {
+      i++;
+      if (i < chain.length) { img.src = chain[i]; return; }
+      logo.setAttribute('style', fallbackStyle); logo.innerHTML = fallbackHTML;
+    };
+    img.src = chain[0];
+    logo.style.cssText += ';padding:0;overflow:hidden;';
+    logo.innerHTML = '';
+    logo.appendChild(img);
+    row._imgLoaded = true;
+  });
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── filterTable stub (keeps any stray inline calls from crashing) ──
+function filterTable() {}
+
+// ── Discover Settings ──
+let discoverAllBrands = [];     // [{ key, name, publisher }]
+let discoverPinnedKeys = [];    // [brand_key, ...]
+
+async function loadDiscoverSettings() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/admin/discover-settings`);
+    const data = await res.json();
+    document.getElementById('ds-result-count').value = data.result_count || 10;
+    discoverPinnedKeys = data.pinned_brand_keys || [];
+
+    // Load all brands for search (reuse featured?all=1)
+    if (!discoverAllBrands.length) {
+      const br = await fetch(`${API_BASE}/api/featured?all=1`);
+      const bj = await br.json();
+      discoverAllBrands = (bj.data || []).map(b => ({
+        key: b.brand_key, name: b.brand_name, publisher: b.publisher_name,
+      }));
+    }
+    renderPinnedList();
+  } catch(e) { showToast('Could not load Discover settings'); }
+}
+
+async function saveDiscoverSettings() {
+  const resultCount = parseInt(document.getElementById('ds-result-count').value, 10);
+  try {
+    await fetch(`${API_BASE}/api/admin/discover-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ result_count: resultCount, pinned_brand_keys: discoverPinnedKeys }),
+    });
+    showToast('Discover settings saved');
+  } catch(e) { showToast('Save failed'); }
+}
+
+function searchDiscoverBrands(query) {
+  const resultsEl = document.getElementById('ds-brand-results');
+  if (!query.trim()) { resultsEl.style.display = 'none'; return; }
+  const q = query.toLowerCase();
+  const matches = discoverAllBrands
+    .filter(b => !discoverPinnedKeys.includes(b.key))
+    .filter(b => b.name.toLowerCase().includes(q) || b.publisher.toLowerCase().includes(q))
+    .slice(0, 8);
+  if (!matches.length) { resultsEl.style.display = 'none'; return; }
+  resultsEl.style.display = '';
+  resultsEl.innerHTML = matches.map(b => `
+    <div onclick="pinBrand('${b.key}','${b.name.replace(/'/g,"\\'")}','${(b.publisher||'').replace(/'/g,"\\'")}'); document.getElementById('ds-brand-search').value=''; document.getElementById('ds-brand-results').style.display='none';"
+      style="padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background 0.1s;"
+      onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <div>
+        <div style="font-size:13px;font-weight:700;">${b.name}</div>
+        <div style="font-size:11px;color:var(--muted);">${b.publisher || ''}</div>
+      </div>
+      <span style="font-size:12px;color:var(--purple);font-weight:700;">+ Pin</span>
+    </div>`).join('');
+}
+
+function pinBrand(key, name, publisher) {
+  if (discoverPinnedKeys.includes(key)) return;
+  discoverPinnedKeys.push(key);
+  renderPinnedList();
+}
+
+function unpinBrand(key) {
+  discoverPinnedKeys = discoverPinnedKeys.filter(k => k !== key);
+  renderPinnedList();
+}
+
+function renderPinnedList() {
+  const el = document.getElementById('ds-pinned-list');
+  if (!discoverPinnedKeys.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">No publishers pinned yet</div>';
+    return;
+  }
+  el.innerHTML = discoverPinnedKeys.map(key => {
+    const b = discoverAllBrands.find(x => x.key === key);
+    const name = b ? b.name : key;
+    const pub  = b ? b.publisher : '';
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;">${name}</div>
+          <div style="font-size:11px;color:var(--muted);">${pub}</div>
+        </div>
+        <button onclick="unpinBrand('${key}')"
+          style="background:none;border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;color:#c00;cursor:pointer;font-weight:600;">
+          Remove
+        </button>
+      </div>`;
+  }).join('');
+}
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', async () => {
+  await populatePublisherSelect();
+  await loadStats();
+  await loadHandlesTable(1);
+});
+</script>
+</body>
+</html>
