@@ -13,18 +13,57 @@ export function normalizeDomain(raw) {
     .replace(/[/?#].*$/, '');
 }
 
-async function fetchPage(url) {
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+async function fetchDirect(url, diag) {
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' },
-      signal: AbortSignal.timeout(8000),
+      headers: {
+        'User-Agent': BROWSER_UA,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      signal: AbortSignal.timeout(12000),
       redirect: 'follow',
     });
-    if (!res.ok) return '';
+    if (!res.ok) {
+      if (diag) diag.push(`direct ${url} → HTTP ${res.status}`);
+      return { html: '', status: res.status };
+    }
+    return { html: await res.text(), status: res.status };
+  } catch (e) {
+    if (diag) diag.push(`direct ${url} → ${e.name}: ${e.message}`);
+    return { html: '', status: 0 };
+  }
+}
+
+async function fetchViaScraperApi(url, scraperKey, diag) {
+  const proxied = `https://api.scraperapi.com/?api_key=${encodeURIComponent(scraperKey)}&url=${encodeURIComponent(url)}`;
+  try {
+    const res = await fetch(proxied, {
+      signal: AbortSignal.timeout(60000),
+      redirect: 'follow',
+    });
+    if (!res.ok) {
+      if (diag) diag.push(`scraperapi ${url} → HTTP ${res.status}`);
+      return '';
+    }
     return await res.text();
-  } catch {
+  } catch (e) {
+    if (diag) diag.push(`scraperapi ${url} → ${e.name}: ${e.message}`);
     return '';
   }
+}
+
+// Direct first to save credits; on bot-block status (401/403/429/503) or
+// network failure, retry through ScraperAPI if a key is configured.
+async function fetchPage(url, diag, scraperKey) {
+  const direct = await fetchDirect(url, diag);
+  if (direct.html) return direct.html;
+  if (!scraperKey) return '';
+  const blocked = direct.status === 0 || [401, 403, 429, 451, 502, 503].includes(direct.status);
+  if (!blocked) return '';
+  return await fetchViaScraperApi(url, scraperKey, diag);
 }
 
 function stripHtml(html) {
@@ -58,16 +97,25 @@ function findRelevantLinks(html, domain) {
   return links;
 }
 
-async function analyzeDomain(domain, apiKey) {
-  // Try https first, fall back to www
-  let homeHtml = await fetchPage(`https://${domain}`);
-  if (!homeHtml) homeHtml = await fetchPage(`https://www.${domain}`);
-  if (!homeHtml) throw new Error(`Could not fetch ${domain}`);
+async function analyzeDomain(domain, apiKey, scraperKey) {
+  const diag = [];
+  let homeHtml = await fetchPage(`https://${domain}`, diag, scraperKey);
+  if (!homeHtml) homeHtml = await fetchPage(`https://www.${domain}`, diag, scraperKey);
+  if (!homeHtml) {
+    const blob = diag.join(' | ');
+    if (/HTTP 40[13]/.test(blob)) {
+      throw new Error(`${domain} blocks automated analysis (likely behind a bot-protection layer). Try a different domain.`);
+    }
+    if (/Timeout/i.test(blob)) {
+      throw new Error(`${domain} took too long to respond. Try again or use a different domain.`);
+    }
+    throw new Error(`Could not reach ${domain}. Please double-check the URL.`);
+  }
 
   const homeText = stripHtml(homeHtml);
   const links = findRelevantLinks(homeHtml, domain);
 
-  const extraResults = await Promise.allSettled(links.map(url => fetchPage(url).then(stripHtml)));
+  const extraResults = await Promise.allSettled(links.map(url => fetchPage(url, diag, scraperKey).then(stripHtml)));
   const extraText = extraResults
     .filter(r => r.status === 'fulfilled' && r.value)
     .map(r => r.value)
@@ -227,7 +275,7 @@ export async function handleDiscover(request, env) {
     dna = JSON.parse(cached.dna_json);
   } else {
     try {
-      dna = await analyzeDomain(domain, env.ANTHROPIC_API_KEY);
+      dna = await analyzeDomain(domain, env.ANTHROPIC_API_KEY, env.SCRAPERAPI_KEY);
     } catch (e) {
       return json({ error: 'Analysis failed: ' + e.message }, 500);
     }
