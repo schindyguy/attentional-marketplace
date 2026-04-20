@@ -258,6 +258,15 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
 </head>
 <body>
 
+<script>
+// ── Auth gate: admin only (client-side; see /index.html) ──
+(function(){
+  if (sessionStorage.getItem('am_auth') !== 'admin') {
+    location.replace('/');
+  }
+})();
+</script>
+
 <!-- NAV -->
 <nav>
   <a class="nav-logo" href="#">

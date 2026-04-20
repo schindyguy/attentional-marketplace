@@ -703,6 +703,16 @@ nav {
 </head>
 <body>
 
+<script>
+// ── Auth gate (client-side; see /index.html) ──
+(function(){
+  const role = sessionStorage.getItem('am_auth');
+  if (role !== 'advertiser' && role !== 'admin') {
+    location.replace('/');
+  }
+})();
+</script>
+
 <!-- NAV -->
 <nav>
   <a class="nav-logo" href="#">
@@ -834,9 +844,10 @@ nav {
       <div class="rec-title">Find the right publishers for your brand</div>
       <div class="rec-sub">Enter your domain and we'll surface the most endemic publishers from our catalog — matched to your brand's content and audience.</div>
       <div class="rec-input-row">
-        <input class="rec-input" type="text" id="domainInput" placeholder="yourbrand.com" oninput="checkDomain()">
+        <input class="rec-input" type="text" id="domainInput" placeholder="yourbrand.com" oninput="checkDomain()" onkeydown="if(event.key==='Enter'){event.preventDefault();runRecommendations();}">
         <button class="rec-btn" id="recBtn" onclick="runRecommendations()" disabled>Analyze →</button>
       </div>
+      <div id="recError" style="display:none;margin-top:10px;font-size:12px;color:#d64545;"></div>
       <div id="recLoading" style="display:none;padding:16px 0 4px;">
         <div class="rec-loading">
           <div class="rec-spinner"></div>
@@ -1365,6 +1376,7 @@ function restoreDiscoverFromCache() {
   const cache = loadDiscoverCache();
   if (!cache || !Object.keys(publishers).length) return;
   document.getElementById('domainInput').value = cache.domain;
+  checkDomain(); // re-enable Analyze so a re-run works when results are already showing
   renderDnaCard(cache.dna, cache.domain);
   renderDiscoverResults(cache.results, `Results for ${cache.domain}`, `${cache.results.length} publishers matched to your brand`);
 }
@@ -1401,26 +1413,69 @@ function stopLoadingCycle() {
 
 function checkDomain() {
   const v = document.getElementById('domainInput').value.trim();
-  document.getElementById('recBtn').disabled = v.length < 4;
+  document.getElementById('recBtn').disabled = v.length < 3;
+  // Clear any stale inline error as the user edits
+  const errEl = document.getElementById('recError');
+  if (errEl && errEl.style.display !== 'none') {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+}
+
+function showRecError(msg) {
+  const errEl = document.getElementById('recError');
+  if (!errEl) { showToast(msg); return; }
+  errEl.textContent = msg;
+  errEl.style.display = '';
+}
+
+function validateDomainInput(raw) {
+  const v = (raw || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/[/?#].*$/, '');
+  if (!v) return { ok: false, msg: 'Please enter a website (e.g., yourbrand.com).' };
+  if (!v.includes('.') || /\.$/.test(v) || /^\./.test(v)) {
+    return { ok: false, msg: `Please include the full domain with a TLD (e.g., ${v || 'yourbrand'}.com).` };
+  }
+  const tld = v.split('.').pop();
+  if (tld.length < 2 || !/^[a-z]{2,}$/i.test(tld)) {
+    return { ok: false, msg: 'That doesn’t look like a valid domain. Try something like yourbrand.com.' };
+  }
+  return { ok: true, domain: v };
 }
 
 async function runRecommendations() {
-  const domain    = document.getElementById('domainInput').value.trim();
+  const rawInput  = document.getElementById('domainInput').value;
   const loadingEl = document.getElementById('recLoading');
+  const btn       = document.getElementById('recBtn');
+
+  // Client-side validation first — surfaces a clear error instead of silent spinner
+  const check = validateDomainInput(rawInput);
+  if (!check.ok) {
+    showRecError(check.msg);
+    document.getElementById('domainInput').focus();
+    return;
+  }
+  const domain = check.domain;
+
+  // Reset prior error + results so a re-run is obvious
+  const errEl = document.getElementById('recError');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  document.getElementById('dnaCrawlCard').style.display = 'none';
+  document.getElementById('discoverResultsWrap').style.display = 'none';
+
   loadingEl.style.display = 'block';
-  document.getElementById('recBtn').disabled = true;
+  btn.disabled = true;
   startLoadingCycle();
   try {
     const res  = await fetch(`${API_BASE}/api/discover`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ domain }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     stopLoadingCycle();
     loadingEl.style.display = 'none';
-    document.getElementById('recBtn').disabled = false;
+    btn.disabled = false;
     if (!res.ok || data.error) {
-      showToast(data.error || 'Analysis failed — please try again');
+      showRecError(data.error || `Analysis failed (${res.status}) — please try again.`);
       return;
     }
     const results = (data.results || []).map(r => ({
@@ -1437,8 +1492,8 @@ async function runRecommendations() {
   } catch(e) {
     stopLoadingCycle();
     loadingEl.style.display = 'none';
-    document.getElementById('recBtn').disabled = false;
-    showToast('Could not reach API — is the Worker deployed?');
+    btn.disabled = false;
+    showRecError('Could not reach the API. Check your connection and try again.');
   }
 }
 

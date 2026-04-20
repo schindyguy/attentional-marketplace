@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attentional — Sign in</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple: #2d4a6e;
+  --purple-light: #eef2f7;
+  --purple-mid: #4a6d9c;
+  --bg: #f3f5f8;
+  --white: #fff;
+  --text: #1a2535;
+  --muted: #7a8fa6;
+  --border: #d8e2ec;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --error: #d64545;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.login-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 4px 20px rgba(20, 30, 50, 0.06);
+}
+.login-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.login-logo img { height: 34px; display: block; }
+.login-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.login-sub {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 24px;
+}
+.login-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.12s;
+  font-family: inherit;
+}
+.login-input:focus { border-color: var(--purple-mid); }
+.login-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--purple);
+  color: var(--white);
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s;
+  font-family: inherit;
+}
+.login-btn:hover { background: var(--purple-mid); }
+.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.login-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--error);
+  text-align: center;
+  min-height: 16px;
+}
+</style>
+</head>
+<body>
+<form class="login-card" id="loginForm" autocomplete="off">
+  <div class="login-logo"><img src="logo.png" alt="Attentional"></div>
+  <div class="login-title">Sign in to continue</div>
+  <div class="login-sub">Enter the access password to continue to the marketplace.</div>
+  <input class="login-input" id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+  <button class="login-btn" type="submit" id="submitBtn">Sign in →</button>
+  <div class="login-error" id="err"></div>
+</form>
+<script>
+const ADVERTISER_HASH = '5a4f499b23a4cf358f626efaeedd9c41d478946224f0ced578b086c8e54ccf67';
+const ADMIN_HASH      = 'dfde96559c20d40a25273ed402eb6a306c6fb81df8573432956f068ae275e9ef';
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Already authed? Redirect straight in.
+(function(){
+  const existing = sessionStorage.getItem('am_auth');
+  if (existing === 'admin')      location.replace('/admin');
+  else if (existing === 'advertiser') location.replace('/advertiser');
+})();
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw  = document.getElementById('pw').value;
+  const err = document.getElementById('err');
+  const btn = document.getElementById('submitBtn');
+  err.textContent = '';
+  btn.disabled = true;
+  try {
+    const hash = await sha256(pw);
+    if (hash === ADMIN_HASH) {
+      sessionStorage.setItem('am_auth', 'admin');
+      location.replace('/admin');
+    } else if (hash === ADVERTISER_HASH) {
+      sessionStorage.setItem('am_auth', 'advertiser');
+      location.replace('/advertiser');
+    } else {
+      err.textContent = 'Incorrect password';
+      btn.disabled = false;
+      document.getElementById('pw').select();
+    }
+  } catch (ex) {
+    err.textContent = 'Sign-in failed. Please try again.';
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
