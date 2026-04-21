@@ -287,14 +287,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
 </head>
 <body>
 
-<script>
-// ── Auth gate: admin only (client-side; see /index.html) ──
-(function(){
-  if (sessionStorage.getItem('am_auth') !== 'admin') {
-    location.replace('/');
-  }
-})();
-</script>
+<!-- Auth: Cloudflare Access gates /admin.html at the edge. -->
 
 <!-- NAV -->
 <nav>
