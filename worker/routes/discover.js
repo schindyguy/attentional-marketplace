@@ -1,7 +1,20 @@
 import { queryMany } from '../lib/db.js';
 import { json } from '../lib/cors.js';
+import { evaluateRules, applyVerdicts } from '../lib/rules.js';
 
 const CACHE_TTL = 30 * 24 * 60 * 60; // 30 days in seconds
+// Bump when the DNA JSON shape changes. Cached rows with a lower
+// schema_version are treated as stale and re-analyzed on next read.
+const DNA_SCHEMA_VERSION = 2;
+
+const GENDER_VALUES = ['male', 'female', 'mixed'];
+const AGE_SKEW_VALUES = ['young', 'adult', 'senior', 'mixed'];
+
+function normalizeEnum(value, allowed, fallback) {
+  if (typeof value !== 'string') return fallback;
+  const v = value.trim().toLowerCase();
+  return allowed.includes(v) ? v : fallback;
+}
 const IG_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="65%" height="65%"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>`;
 
 export function normalizeDomain(raw) {
@@ -145,6 +158,8 @@ Return exactly this JSON structure:
   "categories": ["2 to 4 relevant categories from this list only: Food, Pets, Animals, Lifestyle, Fashion, Beauty, Health, Fitness, Sports, Entertainment, Comedy, Viral, News, Politics, Travel, Technology, Business, Marketing, Home, CPG, Cooking, Recipes, Wellness"],
   "sell_type": "product|service|both",
   "audience_type": "B2C|B2B|both",
+  "audience_gender": "male|female|mixed — use 'mixed' when the brand targets a general audience with no clear gender skew",
+  "age_skew": "young|adult|senior|mixed — young=under 30, adult=30-55, senior=55+, mixed=no clear age skew",
   "tone": "premium|mass-market|budget|professional|playful|inspirational",
   "keywords": ["5 to 8 descriptive keywords about the brand"]
 }`;
@@ -173,7 +188,10 @@ Return exactly this JSON structure:
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Could not parse Claude response');
 
-  return JSON.parse(jsonMatch[0]);
+  const parsed = JSON.parse(jsonMatch[0]);
+  parsed.audience_gender = normalizeEnum(parsed.audience_gender, GENDER_VALUES, 'mixed');
+  parsed.age_skew = normalizeEnum(parsed.age_skew, AGE_SKEW_VALUES, 'mixed');
+  return parsed;
 }
 
 function brandKey(name) {
@@ -255,50 +273,65 @@ export async function handleDiscover(request, env) {
 
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY not configured' }, 500);
 
+  let out;
+  try {
+    out = await runRecommendationPipeline(env, domain);
+  } catch (e) {
+    return json({ error: 'Analysis failed: ' + e.message }, 500);
+  }
+
+  // Public response: advertisers see the final list only. Admin uses
+  // /api/admin/rules/test to get the full pipeline trace.
+  const publicResults = out.results.map(r => {
+    const { triggered_rules: _tr, ...rest } = r;
+    return rest;
+  });
+  return json({ domain: out.domain, dna: out.dna, results: publicResults });
+}
+
+// Shared recommendation pipeline — used by the admin test endpoint so the trace
+// and the public endpoint cannot diverge. Returns the full, untrimmed picture.
+export async function runRecommendationPipeline(env, domain, { skipLog = false } = {}) {
   const { DB } = env;
 
-  // Load admin settings
   const settingRows = await queryMany(DB, `SELECT key, value FROM admin_discover_settings`);
   const settings = Object.fromEntries(settingRows.map(r => [r.key, r.value]));
   const resultCount = parseInt(settings.result_count || '10', 10);
   const pinnedKeys = JSON.parse(settings.pinned_brand_keys || '[]');
 
-  // Check D1 cache
   const cached = await DB.prepare(
-    `SELECT dna_json, analyzed_at FROM advertiser_domains WHERE domain = ?`
+    `SELECT dna_json, analyzed_at, schema_version FROM advertiser_domains WHERE domain = ?`
   ).bind(domain).first();
-
   const now = Math.floor(Date.now() / 1000);
-  let dna;
+  const cacheValid = cached
+    && (now - cached.analyzed_at) < CACHE_TTL
+    && (cached.schema_version ?? 1) >= DNA_SCHEMA_VERSION;
 
-  if (cached && (now - cached.analyzed_at) < CACHE_TTL) {
+  let dna;
+  if (cacheValid) {
     dna = JSON.parse(cached.dna_json);
   } else {
-    try {
-      dna = await analyzeDomain(domain, env.ANTHROPIC_API_KEY, env.SCRAPERAPI_KEY);
-    } catch (e) {
-      return json({ error: 'Analysis failed: ' + e.message }, 500);
-    }
+    dna = await analyzeDomain(domain, env.ANTHROPIC_API_KEY, env.SCRAPERAPI_KEY);
     await DB.prepare(
-      `INSERT INTO advertiser_domains (domain, dna_json, analyzed_at) VALUES (?, ?, ?)
-       ON CONFLICT(domain) DO UPDATE SET dna_json = excluded.dna_json, analyzed_at = excluded.analyzed_at`
-    ).bind(domain, JSON.stringify(dna), now).run();
+      `INSERT INTO advertiser_domains (domain, dna_json, analyzed_at, schema_version) VALUES (?, ?, ?, ?)
+       ON CONFLICT(domain) DO UPDATE SET
+         dna_json = excluded.dna_json,
+         analyzed_at = excluded.analyzed_at,
+         schema_version = excluded.schema_version`
+    ).bind(domain, JSON.stringify(dna), now, DNA_SCHEMA_VERSION).run();
   }
 
-  // Load all active brands
-  const rows = await queryMany(DB,
+  const handleRows = await queryMany(DB,
     `SELECT h.*, p.name AS publisher_name
      FROM handles h LEFT JOIN publishers p ON p.id = h.publisher_id
      WHERE h.status = 'active'
      ORDER BY h.followers DESC`);
 
   const brands = new Map();
-  for (const row of rows) {
+  for (const row of handleRows) {
     const key = brandKey(row.brand_name);
     const cats = JSON.parse(row.categories || '[]');
-    if (!brands.has(key)) {
-      brands.set(key, { key, name: row.brand_name, publisher: row.publisher_name, categories: [], total_reach: 0 });
-    }
+    if (!brands.has(key)) brands.set(key, { key, name: row.brand_name, publisher: row.publisher_name, categories: [], total_reach: 0 });
     const b = brands.get(key);
     b.total_reach += row.followers;
     for (const c of cats) { if (!b.categories.includes(c)) b.categories.push(c); }
@@ -306,7 +339,6 @@ export async function handleDiscover(request, env) {
 
   let scored = scoreBrands(brands, dna);
 
-  // Ensure pinned brands are always included even if below score threshold
   for (const pk of pinnedKeys) {
     if (!scored.find(r => r.brand_key === pk) && brands.has(pk)) {
       const b = brands.get(pk);
@@ -320,7 +352,45 @@ export async function handleDiscover(request, env) {
     }
   }
 
-  const results = shuffleIntoResults(scored, pinnedKeys, resultCount);
+  const ruleRows = await queryMany(DB,
+    `SELECT id, name, priority, enabled, conditions_json, action, brand_keys_json, boost_points, deleted_at
+     FROM recommendation_rules WHERE deleted_at IS NULL`);
+  const { fired, skipped, verdicts } = evaluateRules(ruleRows, dna);
+  const { excluded, forceIncluded, unknownRefs } = applyVerdicts(scored, brands, verdicts);
 
-  return json({ domain, dna, results });
+  scored.sort((a, b) => b.score - a.score);
+
+  const guaranteedKeys = new Set([...pinnedKeys, ...forceIncluded]);
+  const results = shuffleIntoResults(scored, [...guaranteedKeys], resultCount);
+
+  if (!skipLog && fired.length) {
+    const firedIds = fired.map(f => f.rule_id);
+    const placeholders = firedIds.map(() => '?').join(',');
+    try {
+      await DB.prepare(
+        `UPDATE recommendation_rules
+         SET fire_count = fire_count + 1, last_fired_at = unixepoch()
+         WHERE id IN (${placeholders})`
+      ).bind(...firedIds).run();
+    } catch (_) {}
+  }
+  if (!skipLog) {
+    try {
+      await DB.prepare(
+        `INSERT INTO recommendation_log (domain, dna_json, triggered_rules, excluded_brands, result_keys)
+         VALUES (?, ?, ?, ?, ?)`
+      ).bind(
+        domain,
+        JSON.stringify(dna),
+        JSON.stringify(fired),
+        JSON.stringify(excluded),
+        JSON.stringify(results.map(r => r.brand_key)),
+      ).run();
+    } catch (_) {}
+  }
+
+  return {
+    domain, dna, results,
+    debug: { fired_rules: fired, skipped_rules: skipped, excluded, unknown_brand_refs: unknownRefs },
+  };
 }

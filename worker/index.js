@@ -5,6 +5,7 @@ import { handleRemoved }        from './routes/removed.js';
 import { handleRecommend }      from './routes/recommend.js';
 import { handleDiscover }       from './routes/discover.js';
 import { handleAdminDiscover }  from './routes/admin_discover.js';
+import { handleAdminRules }     from './routes/admin_rules.js';
 import { handleStats }          from './routes/stats.js';
 import { handleAvatar }         from './routes/avatar.js';
 import { handleUpload }         from './routes/upload.js';
@@ -23,6 +24,7 @@ export default {
     if (path.startsWith('/api/removed'))          return handleRemoved(request, env, url);
     if (path.startsWith('/api/discover'))         return handleDiscover(request, env);
     if (path.startsWith('/api/admin/discover'))   return handleAdminDiscover(request, env);
+    if (path.startsWith('/api/admin/rules'))      return handleAdminRules(request, env);
     if (path.startsWith('/api/recommend'))        return handleRecommend(request, env);
     if (path.startsWith('/api/stats'))            return handleStats(request, env);
     if (path.startsWith('/api/avatar/'))          return handleAvatar(request, env, url);

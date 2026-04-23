@@ -239,6 +239,35 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
 .view { display: none; }
 .view.active { display: block; }
 
+/* ── RULES ── */
+.rule-row { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--white); }
+.rule-row:last-child { border-bottom: none; }
+.rule-row.dragging { opacity: 0.4; }
+.rule-row.drag-over { border-top: 2px solid var(--purple); }
+.rule-row.disabled { background: #fafafa; }
+.rule-row.disabled .rule-name { color: var(--muted); text-decoration: line-through; }
+.rule-drag { cursor: grab; color: var(--muted); font-size: 16px; user-select: none; text-align: center; }
+.rule-drag:active { cursor: grabbing; }
+.rule-name { font-size: 14px; font-weight: 700; }
+.rule-meta { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: ui-monospace, monospace; }
+.rule-chip { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; padding: 2px 7px; border-radius: 4px; margin-right: 4px; }
+.rule-chip.force_include { background: #e8f5e9; color: #2e7d32; }
+.rule-chip.exclude       { background: #ffebee; color: #c62828; }
+.rule-chip.boost         { background: #fff3e0; color: #ef6c00; }
+.rule-chip.priority      { background: #f0f0f5; color: #555; }
+.rule-actions { display: flex; gap: 6px; align-items: center; }
+.rule-condition-row { display: grid; grid-template-columns: 1fr 1fr 2fr 24px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.rule-condition-row select, .rule-condition-row input { font-size: 13px; padding: 8px 10px; }
+.rule-condition-del { background: var(--bg); border: none; border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--muted); height: 36px; }
+.brand-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--purple); color: #fff; border-radius: 14px; padding: 4px 10px; font-size: 12px; font-weight: 600; }
+.brand-chip button { background: rgba(255,255,255,0.3); border: none; border-radius: 50%; width: 16px; height: 16px; color: #fff; font-size: 11px; cursor: pointer; line-height: 1; }
+.brand-result-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 13px; }
+.brand-result-item:hover { background: var(--bg); }
+.brand-result-item:last-child { border-bottom: none; }
+.test-result-block { background: var(--bg); border-radius: var(--radius-sm); padding: 12px; margin-top: 10px; font-size: 12px; }
+.test-result-label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
+.test-result-list { font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6; }
+
 /* ── PUBLISHER CARDS (Publisher section) ── */
 .publisher-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media(min-width:640px){ .publisher-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -283,6 +312,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
   <button class="mobile-nav-btn" onclick="switchView('publishers')">🏢 Publishers</button>
   <button class="mobile-nav-btn" onclick="switchView('removed')">🗂 Removed</button>
   <button class="mobile-nav-btn" onclick="switchView('discover')">🔍 Discover</button>
+  <button class="mobile-nav-btn" onclick="switchView('rules')">⚙️ Rules</button>
 </div>
 
 <div class="layout">
@@ -296,6 +326,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
     <button class="sidebar-link" onclick="switchView('removed')"><span class="sidebar-icon">🗂</span> Removed / Paused <span class="sidebar-count" id="sc-removed">—</span></button>
     <div class="sidebar-label" style="margin-top:12px;">Settings</div>
     <button class="sidebar-link" onclick="switchView('discover')"><span class="sidebar-icon">🔍</span> Discover Settings</button>
+    <button class="sidebar-link" onclick="switchView('rules')"><span class="sidebar-icon">⚙️</span> Recommendation Rules</button>
 
     <div class="sidebar-stats">
       <div class="stat-row"><span class="stat-row-label">Total reach</span><span class="stat-row-value" id="st-reach">—</span></div>
@@ -721,6 +752,36 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
       </div>
     </div>
 
+    <!-- ═══════════════════════════ RULES VIEW ═══════════════════════════ -->
+    <div id="view-rules" class="view">
+      <div class="section-head">
+        <div>
+          <div class="section-title">⚙️ Recommendation Rules</div>
+          <div class="section-sub">If/then logic layered on top of category scoring. Rules add, boost, or exclude publishers based on the advertiser's DNA scan.</div>
+        </div>
+        <button class="btn-sm btn-primary" onclick="openRuleModal()">+ New Rule</button>
+      </div>
+
+      <!-- Test panel -->
+      <div class="table-card" style="padding:20px;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Test Recommendation</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Paste an advertiser domain to see which rules fire, which publishers get added/boosted/excluded, and the final list. Does not write to audit log.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="rules-test-domain" placeholder="e.g. nike.com" style="flex:1;min-width:220px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);outline:none;">
+          <button class="btn-sm btn-primary" onclick="runRuleTest()">Run Test</button>
+        </div>
+        <div id="rules-test-output" style="margin-top:14px;"></div>
+      </div>
+
+      <!-- Rules list -->
+      <div class="table-card" id="rules-list-card">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);">
+          Drag rows by the <span style="font-family:monospace;">⋮⋮</span> handle to reorder priority. Lower priority runs first (useful for trace order — outcome is priority-independent).
+        </div>
+        <div id="rules-list"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -907,6 +968,88 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
     <div class="confirm-actions">
       <button class="btn-sm btn-ghost" style="flex:1;" onclick="closeModal('confirmModal')">Cancel</button>
       <button class="btn-sm btn-danger" style="flex:1;" onclick="confirmRemove()">Yes, remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════
+     MODAL: ADD / EDIT RULE
+═══════════════════════════ -->
+<div class="modal-overlay" id="ruleModal" onclick="if(event.target===this)closeModal('ruleModal')">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="ruleModalTitle">Add Rule</div>
+      <button class="modal-close" onclick="closeModal('ruleModal')">✕</button>
+    </div>
+
+    <input type="hidden" id="r-id" value="">
+
+    <div class="form-group">
+      <label class="form-label">Rule Name</label>
+      <input type="text" class="form-input" id="r-name" placeholder="e.g. Female audience general">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <input type="number" class="form-input" id="r-priority" value="100">
+        <div class="form-hint">Lower runs first (outcome is priority-independent; affects trace order only).</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Enabled</label>
+        <div class="featured-toggle">
+          <div>
+            <div class="toggle-label">Active</div>
+            <div class="toggle-sub">Disable to pause without deleting</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="r-enabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Conditions (all must match — leave empty for a global rule)</label>
+      <div id="r-conditions"></div>
+      <button type="button" class="btn-sm btn-ghost" onclick="addConditionRow()" style="margin-top:8px;">+ Add Condition</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Action</label>
+        <select class="form-input" id="r-action" onchange="onRuleActionChange()">
+          <option value="force_include">force_include — always include these publishers</option>
+          <option value="exclude">exclude — never recommend these publishers</option>
+          <option value="boost">boost — add/subtract score points</option>
+        </select>
+      </div>
+      <div class="form-group" id="r-boost-wrap" style="display:none;">
+        <label class="form-label">Boost Points</label>
+        <input type="number" class="form-input" id="r-boost-points" value="20">
+        <div class="form-hint">Positive promotes; negative demotes. Score capped to [0, 100].</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Target Publishers (brand keys)</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" class="form-input" id="r-brand-search" placeholder="Search publishers to add…" oninput="searchRuleBrands(this.value)" autocomplete="off" style="flex:1;">
+      </div>
+      <div id="r-brand-results" style="display:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--white);max-height:200px;overflow-y:auto;margin-bottom:8px;"></div>
+      <div id="r-brand-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:24px;"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <input type="text" class="form-input" id="r-notes" placeholder="e.g. Tim 4/22 — from Slack thread">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('ruleModal')">Cancel</button>
+      <button class="btn-sm btn-primary" onclick="saveRule()">Save Rule</button>
     </div>
   </div>
 </div>
@@ -1226,6 +1369,7 @@ function switchView(id) {
   if (id === 'publishers') loadPublishersTable(currentPage.publishers);
   if (id === 'removed')    loadRemovedTable(currentPage.removed);
   if (id === 'discover')   loadDiscoverSettings();
+  if (id === 'rules')      loadRules();
 }
 
 // ── Handle filter ──
@@ -1625,6 +1769,359 @@ function renderPinnedList() {
         </button>
       </div>`;
   }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// RECOMMENDATION RULES
+// ══════════════════════════════════════════════════════════
+
+const RULE_FIELDS = {
+  categories:      { type: 'array',  values: ['Food','Pets','Animals','Lifestyle','Fashion','Beauty','Health','Fitness','Sports','Entertainment','Comedy','Viral','News','Politics','Travel','Technology','Business','Marketing','Home','CPG','Cooking','Recipes','Wellness'] },
+  keywords:        { type: 'array',  values: null }, // free-text
+  audience_type:   { type: 'scalar', values: ['B2C','B2B','both'] },
+  audience_gender: { type: 'scalar', values: ['male','female','mixed'] },
+  age_skew:        { type: 'scalar', values: ['young','adult','senior','mixed'] },
+  sell_type:       { type: 'scalar', values: ['product','service','both'] },
+  tone:            { type: 'scalar', values: ['premium','mass-market','budget','professional','playful','inspirational'] },
+};
+const RULE_OPS = {
+  array:  [['contains_any','contains any of'], ['contains_all','contains all of'], ['contains_none','contains none of']],
+  scalar: [['eq','equals'], ['ne','not equals'], ['in','is one of']],
+};
+
+let allBrands = [];        // [{brand_key, brand_name, total_reach}] — cached for rule UI
+let editingRule = null;
+let selectedBrandKeys = [];
+
+async function loadRules() {
+  try {
+    // Load brand list once (for search + dead-ref detection)
+    if (allBrands.length === 0) {
+      const br = await fetch(`${API_BASE}/api/admin/rules/brand_keys`).then(r => r.json());
+      allBrands = br.brands || [];
+    }
+    const res = await fetch(`${API_BASE}/api/admin/rules`).then(r => r.json());
+    renderRulesList(res.rules || []);
+  } catch (e) {
+    document.getElementById('rules-list').innerHTML = `<div style="padding:20px;color:var(--muted);">Failed to load rules: ${e.message}</div>`;
+  }
+}
+
+function renderRulesList(rules) {
+  const host = document.getElementById('rules-list');
+  if (!rules.length) {
+    host.innerHTML = `<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;">No rules yet. Click "+ New Rule" above to create one.</div>`;
+    return;
+  }
+  const knownBrandKeys = new Set(allBrands.map(b => b.brand_key));
+  host.innerHTML = rules.map(r => {
+    const condSummary = summarizeConditions(r.conditions);
+    const deadRefs = (r.brand_keys || []).filter(bk => !knownBrandKeys.has(bk));
+    const actionChip = `<span class="rule-chip ${r.action}">${r.action}${r.action==='boost' ? ' '+(r.boost_points>0?'+':'')+r.boost_points : ''}</span>`;
+    const priorityChip = `<span class="rule-chip priority">p${r.priority}</span>`;
+    const fireInfo = r.fire_count > 0 ? ` · fired ${r.fire_count}×` : ' · never fired';
+    const deadWarn = deadRefs.length ? `<span title="${deadRefs.join(', ')}" style="color:#c62828;font-weight:700;margin-left:6px;">⚠ ${deadRefs.length} dead ref${deadRefs.length>1?'s':''}</span>` : '';
+    return `
+      <div class="rule-row${r.enabled ? '' : ' disabled'}" draggable="true" data-id="${r.id}" data-priority="${r.priority}">
+        <div class="rule-drag">⋮⋮</div>
+        <div>
+          <div class="rule-name">${escapeHtml(r.name)}${deadWarn}</div>
+          <div class="rule-meta">${priorityChip}${actionChip}<span>${condSummary}</span> → <b>${(r.brand_keys||[]).length}</b> publishers${fireInfo}</div>
+        </div>
+        <div class="rule-actions">
+          <label class="toggle-switch" title="Enable/disable" style="width:36px;height:20px;">
+            <input type="checkbox" ${r.enabled?'checked':''} onchange="toggleRule(${r.id}, this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+          <button class="btn-sm btn-ghost" onclick="openRuleModal(${r.id})">Edit</button>
+          <button class="btn-sm btn-ghost" onclick="deleteRule(${r.id}, '${escapeAttr(r.name)}')" style="color:#c62828;">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+  wireRuleDragDrop();
+}
+
+function summarizeConditions(conds) {
+  if (!conds || !conds.length) return '<i>(always matches)</i>';
+  return conds.map(c => `${c.field} ${c.op} ${JSON.stringify(c.value)}`).join(' <b>AND</b> ');
+}
+
+function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s) { return String(s||'').replace(/'/g, "\\'"); }
+
+// ── Drag to reorder priority ──
+let dragSrc = null;
+function wireRuleDragDrop() {
+  document.querySelectorAll('#rules-list .rule-row').forEach(row => {
+    row.addEventListener('dragstart', e => { dragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    row.addEventListener('dragend',   () => { row.classList.remove('dragging'); document.querySelectorAll('.rule-row').forEach(r=>r.classList.remove('drag-over')); });
+    row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop',      e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (!dragSrc || dragSrc === row) return;
+      const list = document.getElementById('rules-list');
+      const rect = row.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height/2;
+      list.insertBefore(dragSrc, before ? row : row.nextSibling);
+      persistRuleOrder();
+    });
+  });
+}
+async function persistRuleOrder() {
+  const rows = [...document.querySelectorAll('#rules-list .rule-row')];
+  // Re-number priorities in steps of 10 for headroom
+  const updates = rows.map((row, i) => ({ id: parseInt(row.dataset.id,10), priority: (i+1)*10 }));
+  await Promise.all(updates.map(u =>
+    fetch(`${API_BASE}/api/admin/rules/${u.id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({priority: u.priority}) })
+  ));
+  toast('Priority updated');
+  loadRules();
+}
+
+// ── Enable toggle ──
+async function toggleRule(id, enabled) {
+  await fetch(`${API_BASE}/api/admin/rules/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({enabled}) });
+  toast(enabled ? 'Rule enabled' : 'Rule disabled');
+  loadRules();
+}
+
+// ── Delete ──
+async function deleteRule(id, name) {
+  if (!confirm(`Delete rule "${name}"? This is a soft delete — restore later via D1 if needed.`)) return;
+  await fetch(`${API_BASE}/api/admin/rules/${id}`, { method: 'DELETE' });
+  toast('Rule deleted');
+  loadRules();
+}
+
+// ── Modal ──
+async function openRuleModal(id) {
+  editingRule = null;
+  selectedBrandKeys = [];
+  document.getElementById('r-id').value = '';
+  document.getElementById('r-name').value = '';
+  document.getElementById('r-priority').value = 100;
+  document.getElementById('r-enabled').checked = true;
+  document.getElementById('r-action').value = 'force_include';
+  document.getElementById('r-boost-points').value = 20;
+  document.getElementById('r-notes').value = '';
+  document.getElementById('r-conditions').innerHTML = '';
+  renderBrandChips();
+  onRuleActionChange();
+  document.getElementById('ruleModalTitle').textContent = id ? 'Edit Rule' : 'Add Rule';
+
+  if (id) {
+    const res = await fetch(`${API_BASE}/api/admin/rules`).then(r => r.json());
+    const rule = (res.rules || []).find(r => r.id === id);
+    if (!rule) { toast('Rule not found'); return; }
+    editingRule = rule;
+    document.getElementById('r-id').value = rule.id;
+    document.getElementById('r-name').value = rule.name;
+    document.getElementById('r-priority').value = rule.priority;
+    document.getElementById('r-enabled').checked = rule.enabled;
+    document.getElementById('r-action').value = rule.action;
+    document.getElementById('r-boost-points').value = rule.boost_points || 0;
+    document.getElementById('r-notes').value = rule.notes || '';
+    (rule.conditions || []).forEach(c => addConditionRow(c));
+    selectedBrandKeys = [...(rule.brand_keys || [])];
+    renderBrandChips();
+    onRuleActionChange();
+  }
+  document.getElementById('ruleModal').classList.add('open');
+}
+
+function onRuleActionChange() {
+  const action = document.getElementById('r-action').value;
+  document.getElementById('r-boost-wrap').style.display = action === 'boost' ? '' : 'none';
+}
+
+function addConditionRow(cond) {
+  const host = document.getElementById('r-conditions');
+  const row = document.createElement('div');
+  row.className = 'rule-condition-row';
+  const fieldSel = `<select class="form-input cond-field">${Object.keys(RULE_FIELDS).map(f => `<option value="${f}"${cond?.field===f?' selected':''}>${f}</option>`).join('')}</select>`;
+  row.innerHTML = `${fieldSel}<select class="form-input cond-op"></select><div class="cond-value-wrap"></div><button class="rule-condition-del" type="button">✕</button>`;
+  host.appendChild(row);
+  const fieldEl = row.querySelector('.cond-field');
+  const opEl = row.querySelector('.cond-op');
+  const valWrap = row.querySelector('.cond-value-wrap');
+  const refresh = () => {
+    const field = fieldEl.value;
+    const meta = RULE_FIELDS[field];
+    const ops = RULE_OPS[meta.type];
+    opEl.innerHTML = ops.map(([v,l]) => `<option value="${v}"${cond?.op===v?' selected':''}>${l}</option>`).join('');
+    renderValueInput(valWrap, field, meta, cond);
+    cond = null; // only apply cond preselection once
+  };
+  fieldEl.addEventListener('change', refresh);
+  row.querySelector('.rule-condition-del').addEventListener('click', () => row.remove());
+  refresh();
+}
+
+function renderValueInput(wrap, field, meta, cond) {
+  const currentVal = cond?.value;
+  if (meta.values) {
+    // multi-select via comma-separated chips; simpler: checkbox list in a popover is overkill.
+    // Use a <select multiple> — compact and native.
+    wrap.innerHTML = `<select class="form-input cond-value" multiple size="1" style="min-height:38px;">${meta.values.map(v => {
+      const sel = Array.isArray(currentVal) ? currentVal.includes(v) : currentVal === v;
+      return `<option value="${v}"${sel?' selected':''}>${v}</option>`;
+    }).join('')}</select>`;
+  } else {
+    // free-text (keywords): comma-separated
+    const val = Array.isArray(currentVal) ? currentVal.join(', ') : (currentVal || '');
+    wrap.innerHTML = `<input type="text" class="form-input cond-value" placeholder="comma-separated values" value="${escapeHtml(val)}">`;
+  }
+}
+
+function collectConditions() {
+  const rows = [...document.querySelectorAll('#r-conditions .rule-condition-row')];
+  return rows.map(row => {
+    const field = row.querySelector('.cond-field').value;
+    const op    = row.querySelector('.cond-op').value;
+    const valEl = row.querySelector('.cond-value');
+    let value;
+    if (valEl.tagName === 'SELECT') {
+      value = [...valEl.selectedOptions].map(o => o.value);
+      // scalar ops 'eq'/'ne' expect a single value; 'in' expects array
+      if (['eq','ne'].includes(op)) value = value[0] || '';
+    } else {
+      value = valEl.value.split(',').map(s => s.trim()).filter(Boolean);
+      if (['eq','ne'].includes(op)) value = value[0] || '';
+    }
+    return { field, op, value };
+  }).filter(c => {
+    if (Array.isArray(c.value)) return c.value.length > 0;
+    return c.value !== '' && c.value !== undefined;
+  });
+}
+
+// ── Brand picker ──
+function searchRuleBrands(q) {
+  const box = document.getElementById('r-brand-results');
+  const s = q.trim().toLowerCase();
+  if (!s) { box.style.display = 'none'; return; }
+  const hits = allBrands.filter(b => b.brand_name.toLowerCase().includes(s) || b.brand_key.includes(s)).slice(0, 20);
+  if (!hits.length) { box.style.display='block'; box.innerHTML = `<div class="brand-result-item" style="color:var(--muted);">No matches</div>`; return; }
+  box.style.display = 'block';
+  box.innerHTML = hits.map(b => `<div class="brand-result-item" onclick="addBrandChip('${b.brand_key}','${escapeAttr(b.brand_name)}')">${escapeHtml(b.brand_name)} <span style="color:var(--muted);font-family:monospace;font-size:11px;">${b.brand_key}</span></div>`).join('');
+}
+function addBrandChip(key, name) {
+  if (!selectedBrandKeys.includes(key)) selectedBrandKeys.push(key);
+  document.getElementById('r-brand-search').value = '';
+  document.getElementById('r-brand-results').style.display = 'none';
+  renderBrandChips();
+}
+function removeBrandChip(key) {
+  selectedBrandKeys = selectedBrandKeys.filter(k => k !== key);
+  renderBrandChips();
+}
+function renderBrandChips() {
+  const host = document.getElementById('r-brand-chips');
+  const byKey = Object.fromEntries(allBrands.map(b => [b.brand_key, b.brand_name]));
+  host.innerHTML = selectedBrandKeys.length
+    ? selectedBrandKeys.map(k => `<span class="brand-chip">${escapeHtml(byKey[k] || k)}<button type="button" onclick="removeBrandChip('${k}')">✕</button></span>`).join('')
+    : '<span style="font-size:12px;color:var(--muted);">No publishers selected</span>';
+}
+
+// ── Save ──
+async function saveRule() {
+  const id = document.getElementById('r-id').value;
+  const payload = {
+    name:         document.getElementById('r-name').value.trim(),
+    priority:     parseInt(document.getElementById('r-priority').value, 10) || 100,
+    enabled:      document.getElementById('r-enabled').checked,
+    action:       document.getElementById('r-action').value,
+    boost_points: parseInt(document.getElementById('r-boost-points').value, 10) || 0,
+    conditions:   collectConditions(),
+    brand_keys:   selectedBrandKeys,
+    notes:        document.getElementById('r-notes').value.trim() || null,
+  };
+  if (!payload.name) return toast('Name required');
+  if (!payload.brand_keys.length) return toast('Pick at least one publisher');
+
+  const url = id ? `${API_BASE}/api/admin/rules/${id}` : `${API_BASE}/api/admin/rules`;
+  const method = id ? 'PATCH' : 'POST';
+  const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  const data = await res.json();
+  if (!res.ok) return toast(data.error || 'Save failed');
+  closeModal('ruleModal');
+  toast(id ? 'Rule updated' : 'Rule created');
+  loadRules();
+}
+
+// ── Test panel ──
+async function runRuleTest() {
+  const domain = document.getElementById('rules-test-domain').value.trim();
+  if (!domain) return toast('Enter a domain');
+  const out = document.getElementById('rules-test-output');
+  out.innerHTML = `<div style="padding:12px;color:var(--muted);">Running…</div>`;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/rules/test`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({domain})
+    });
+    const data = await res.json();
+    if (!res.ok) { out.innerHTML = `<div style="padding:12px;color:#c62828;">${escapeHtml(data.error || 'Failed')}</div>`; return; }
+    renderRuleTestOutput(data);
+  } catch (e) {
+    out.innerHTML = `<div style="padding:12px;color:#c62828;">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderRuleTestOutput(data) {
+  const dna = data.dna || {};
+  const dbg = data.debug || {};
+  const fired = dbg.fired_rules || [];
+  const skipped = dbg.skipped_rules || [];
+  const excluded = dbg.excluded || [];
+  const unknown = dbg.unknown_brand_refs || [];
+  const results = data.results || [];
+
+  const dnaBlock = `
+    <div class="test-result-block">
+      <div class="test-result-label">DNA scan — ${escapeHtml(data.domain)}</div>
+      <div class="test-result-list">
+        categories: ${JSON.stringify(dna.categories||[])}<br>
+        audience_type: ${dna.audience_type||'?'} · audience_gender: ${dna.audience_gender||'?'} · age_skew: ${dna.age_skew||'?'}<br>
+        sell_type: ${dna.sell_type||'?'} · tone: ${dna.tone||'?'}
+      </div>
+    </div>`;
+
+  const firedBlock = `
+    <div class="test-result-block">
+      <div class="test-result-label">Rules fired (${fired.length})</div>
+      <div class="test-result-list">${fired.length ? fired.map(f => `✓ <b>${escapeHtml(f.rule_name)}</b> <span class="rule-chip ${f.action}">${f.action}${f.action==='boost'?' '+(f.boost_points>0?'+':'')+f.boost_points:''}</span> → ${f.brand_keys.length} publishers`).join('<br>') : '<i>No rules fired</i>'}</div>
+    </div>`;
+
+  const skippedBlock = skipped.length ? `
+    <div class="test-result-block">
+      <div class="test-result-label">Rules skipped (${skipped.length})</div>
+      <div class="test-result-list">${skipped.map(s => `✗ ${escapeHtml(s.rule_name)} — ${s.reason}`).join('<br>')}</div>
+    </div>` : '';
+
+  const excludedBlock = excluded.length ? `
+    <div class="test-result-block" style="background:#ffebee;">
+      <div class="test-result-label">Excluded (${excluded.length}) — admin-only visibility</div>
+      <div class="test-result-list">${excluded.map(x => `⛔ <b>${escapeHtml(x.brand_name)}</b> — by rule: ${escapeHtml(x.excluded_by.rule_name)}`).join('<br>')}</div>
+    </div>` : '';
+
+  const unknownBlock = unknown.length ? `
+    <div class="test-result-block" style="background:#fff3e0;">
+      <div class="test-result-label">⚠ Dead brand refs (${unknown.length})</div>
+      <div class="test-result-list">${unknown.map(u => `${u.brand_key} (referenced by: ${u.rules.map(r=>r.rule_name).join(', ')})`).join('<br>')}</div>
+    </div>` : '';
+
+  const resultsBlock = `
+    <div class="test-result-block">
+      <div class="test-result-label">Final results (${results.length})</div>
+      <div class="test-result-list">${results.map((r,i) => {
+        const trig = (r.triggered_rules||[]).map(t => `<span class="rule-chip ${t.action}">${escapeHtml(t.name)}</span>`).join(' ');
+        return `${i+1}. <b>${escapeHtml(r.brand_name)}</b> (${r.brand_key}) — score ${r.score} ${trig}`;
+      }).join('<br>')}</div>
+    </div>`;
+
+  document.getElementById('rules-test-output').innerHTML = dnaBlock + firedBlock + skippedBlock + excludedBlock + unknownBlock + resultsBlock;
 }
 
 // ── Init ──
