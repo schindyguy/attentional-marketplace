@@ -236,19 +236,18 @@ function scoreBrands(brands, dna) {
   return results;
 }
 
-function shuffleIntoResults(scored, pinnedKeys, resultCount) {
-  const pinnedSet = new Set(pinnedKeys);
-  const pinned = [];
+function shuffleIntoResults(scored, guaranteedKeys, resultCount) {
+  const guaranteedSet = guaranteedKeys instanceof Set ? guaranteedKeys : new Set(guaranteedKeys);
+  const guaranteed = [];
   const organic = [];
 
   for (const r of scored) {
-    if (pinnedSet.has(r.brand_key)) pinned.push(r);
+    if (guaranteedSet.has(r.brand_key)) guaranteed.push(r);
     else organic.push(r);
   }
 
-  // Fill organic up to (resultCount - pinned.length), then merge
-  const organicSlice = organic.slice(0, Math.max(0, resultCount - pinned.length));
-  const combined = [...organicSlice, ...pinned];
+  const organicSlice = organic.slice(0, Math.max(0, resultCount - guaranteed.length));
+  const combined = [...organicSlice, ...guaranteed];
 
   // Fisher-Yates shuffle
   for (let i = combined.length - 1; i > 0; i--) {
@@ -297,7 +296,6 @@ export async function runRecommendationPipeline(env, domain, { skipLog = false }
   const settingRows = await queryMany(DB, `SELECT key, value FROM admin_discover_settings`);
   const settings = Object.fromEntries(settingRows.map(r => [r.key, r.value]));
   const resultCount = parseInt(settings.result_count || '10', 10);
-  const pinnedKeys = JSON.parse(settings.pinned_brand_keys || '[]');
 
   const cached = await DB.prepare(
     `SELECT dna_json, analyzed_at, schema_version FROM advertiser_domains WHERE domain = ?`
@@ -339,19 +337,6 @@ export async function runRecommendationPipeline(env, domain, { skipLog = false }
 
   let scored = scoreBrands(brands, dna);
 
-  for (const pk of pinnedKeys) {
-    if (!scored.find(r => r.brand_key === pk) && brands.has(pk)) {
-      const b = brands.get(pk);
-      scored.push({
-        brand_key: b.key, brand_name: b.name, publisher_name: b.publisher,
-        score: 0, match_label: 'Featured',
-        reason: `Recommended publisher for your campaign.`,
-        matched_tags: b.categories.slice(0, 3),
-        total_reach: b.total_reach, categories: b.categories,
-      });
-    }
-  }
-
   const ruleRows = await queryMany(DB,
     `SELECT id, name, priority, enabled, conditions_json, action, brand_keys_json, boost_points, deleted_at
      FROM recommendation_rules WHERE deleted_at IS NULL`);
@@ -360,8 +345,7 @@ export async function runRecommendationPipeline(env, domain, { skipLog = false }
 
   scored.sort((a, b) => b.score - a.score);
 
-  const guaranteedKeys = new Set([...pinnedKeys, ...forceIncluded]);
-  const results = shuffleIntoResults(scored, [...guaranteedKeys], resultCount);
+  const results = shuffleIntoResults(scored, forceIncluded, resultCount);
 
   if (!skipLog && fired.length) {
     const firedIds = fired.map(f => f.rule_id);

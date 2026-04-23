@@ -732,24 +732,6 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
           style="width:100px;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;background:var(--bg);color:var(--text);outline:none;">
       </div>
 
-      <!-- Pinned Publishers -->
-      <div class="table-card" style="padding:20px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Pinned Publishers</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">These publishers always appear in every advertiser's results, shuffled into random positions so the order looks organic.</div>
-
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <div class="search-box" style="flex:1;">
-            <span style="color:var(--muted);font-size:13px;">🔍</span>
-            <input type="text" id="ds-brand-search" placeholder="Search publishers to pin…" oninput="searchDiscoverBrands(this.value)" autocomplete="off">
-          </div>
-        </div>
-        <div id="ds-brand-results" style="display:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--white);max-height:220px;overflow-y:auto;margin-bottom:16px;"></div>
-
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Currently Pinned</div>
-        <div id="ds-pinned-list">
-          <div style="font-size:13px;color:var(--muted);padding:12px 0;">No publishers pinned yet</div>
-        </div>
-      </div>
     </div>
 
     <!-- ═══════════════════════════ RULES VIEW ═══════════════════════════ -->
@@ -1680,25 +1662,11 @@ function showToast(msg) {
 function filterTable() {}
 
 // ── Discover Settings ──
-let discoverAllBrands = [];     // [{ key, name, publisher }]
-let discoverPinnedKeys = [];    // [brand_key, ...]
-
 async function loadDiscoverSettings() {
   try {
     const res  = await fetch(`${API_BASE}/api/admin/discover-settings`);
     const data = await res.json();
     document.getElementById('ds-result-count').value = data.result_count || 10;
-    discoverPinnedKeys = data.pinned_brand_keys || [];
-
-    // Load all brands for search (reuse featured?all=1)
-    if (!discoverAllBrands.length) {
-      const br = await fetch(`${API_BASE}/api/featured?all=1`);
-      const bj = await br.json();
-      discoverAllBrands = (bj.data || []).map(b => ({
-        key: b.brand_key, name: b.brand_name, publisher: b.publisher_name,
-      }));
-    }
-    renderPinnedList();
   } catch(e) { showToast('Could not load Discover settings'); }
 }
 
@@ -1708,67 +1676,10 @@ async function saveDiscoverSettings() {
     await fetch(`${API_BASE}/api/admin/discover-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ result_count: resultCount, pinned_brand_keys: discoverPinnedKeys }),
+      body: JSON.stringify({ result_count: resultCount }),
     });
     showToast('Discover settings saved');
   } catch(e) { showToast('Save failed'); }
-}
-
-function searchDiscoverBrands(query) {
-  const resultsEl = document.getElementById('ds-brand-results');
-  if (!query.trim()) { resultsEl.style.display = 'none'; return; }
-  const q = query.toLowerCase();
-  const matches = discoverAllBrands
-    .filter(b => !discoverPinnedKeys.includes(b.key))
-    .filter(b => b.name.toLowerCase().includes(q) || b.publisher.toLowerCase().includes(q))
-    .slice(0, 8);
-  if (!matches.length) { resultsEl.style.display = 'none'; return; }
-  resultsEl.style.display = '';
-  resultsEl.innerHTML = matches.map(b => `
-    <div onclick="pinBrand('${b.key}','${b.name.replace(/'/g,"\\'")}','${(b.publisher||'').replace(/'/g,"\\'")}'); document.getElementById('ds-brand-search').value=''; document.getElementById('ds-brand-results').style.display='none';"
-      style="padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background 0.1s;"
-      onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-      <div>
-        <div style="font-size:13px;font-weight:700;">${b.name}</div>
-        <div style="font-size:11px;color:var(--muted);">${b.publisher || ''}</div>
-      </div>
-      <span style="font-size:12px;color:var(--purple);font-weight:700;">+ Pin</span>
-    </div>`).join('');
-}
-
-function pinBrand(key, name, publisher) {
-  if (discoverPinnedKeys.includes(key)) return;
-  discoverPinnedKeys.push(key);
-  renderPinnedList();
-}
-
-function unpinBrand(key) {
-  discoverPinnedKeys = discoverPinnedKeys.filter(k => k !== key);
-  renderPinnedList();
-}
-
-function renderPinnedList() {
-  const el = document.getElementById('ds-pinned-list');
-  if (!discoverPinnedKeys.length) {
-    el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">No publishers pinned yet</div>';
-    return;
-  }
-  el.innerHTML = discoverPinnedKeys.map(key => {
-    const b = discoverAllBrands.find(x => x.key === key);
-    const name = b ? b.name : key;
-    const pub  = b ? b.publisher : '';
-    return `
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-        <div style="flex:1;">
-          <div style="font-size:13px;font-weight:700;">${name}</div>
-          <div style="font-size:11px;color:var(--muted);">${pub}</div>
-        </div>
-        <button onclick="unpinBrand('${key}')"
-          style="background:none;border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;color:#c00;cursor:pointer;font-weight:600;">
-          Remove
-        </button>
-      </div>`;
-  }).join('');
 }
 
 // ══════════════════════════════════════════════════════════
