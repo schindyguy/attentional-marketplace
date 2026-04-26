@@ -45,17 +45,10 @@ export async function handleAvatar(request, env, url) {
     return new Response('Avatar not found', { status: 404 });
   }
 
-  // Buffer the body so we can size-check before serving. Unavatar serves
-  // Instagram's generic 150x150 logo placeholder (~1.5–2 KB) when it can't
-  // actually scrape the profile pic. Real IG profile images are always
-  // much larger, so anything under 3 KB on IG is the placeholder — return
-  // 404 so the frontend falls back to initials.
+  // Trust unavatar's ?fallback=false to 404 when it can't scrape — no size
+  // heuristic, since legit minimalist logos (e.g. NYT) compress under any
+  // size threshold and got false-flagged as the IG placeholder.
   const bodyBuf = await upstreamResp.arrayBuffer();
-  if (provider === 'instagram' && bodyBuf.byteLength < 3000) {
-    const r = new Response('Avatar not found', { status: 404 });
-    cache.put(request, r.clone()).catch(() => {});
-    return r;
-  }
 
   const resp = new Response(bodyBuf, {
     status: 200,

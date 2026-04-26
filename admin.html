@@ -750,8 +750,10 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
 
       <!-- Rules list -->
       <div class="table-card" id="rules-list-card">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);">
-          Drag rows by the <span style="font-family:monospace;">⋮⋮</span> handle to reorder priority. Lower priority runs first (useful for trace order — outcome is priority-independent).
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);line-height:1.55;">
+          <b style="color:var(--text);">Drag rows by the <span style="font-family:monospace;">⋮⋮</span> handle to reorder.</b> Top of list runs first; the chip (<code>p10</code>, <code>p20</code>, …) is just a sequence number renumbered in steps of 10 to leave room for inserts.
+          <br>
+          <span style="color:var(--muted);">Order does <b>not</b> change which publishers get recommended — every matching rule fires, and conflicts resolve deterministically (<code>exclude</code> beats <code>force_include</code> beats summed <code>boost</code>). Priority only affects the order rules show up in the trace log.</span>
         </div>
         <div id="rules-list"></div>
       </div>
@@ -969,7 +971,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
       <div class="form-group">
         <label class="form-label">Priority</label>
         <input type="number" class="form-input" id="r-priority" value="100">
-        <div class="form-hint">Lower runs first (outcome is priority-independent; affects trace order only).</div>
+        <div class="form-hint">Sequence number — lower runs first. Outcome is priority-independent; only affects trace order. Drag-reorder normalizes to multiples of 10.</div>
       </div>
       <div class="form-group">
         <label class="form-label">Enabled</label>
@@ -1780,14 +1782,14 @@ async function persistRuleOrder() {
   await Promise.all(updates.map(u =>
     fetch(`${API_BASE}/api/admin/rules/${u.id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({priority: u.priority}) })
   ));
-  toast('Priority updated');
+  showToast('Priority updated');
   loadRules();
 }
 
 // ── Enable toggle ──
 async function toggleRule(id, enabled) {
   await fetch(`${API_BASE}/api/admin/rules/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({enabled}) });
-  toast(enabled ? 'Rule enabled' : 'Rule disabled');
+  showToast(enabled ? 'Rule enabled' : 'Rule disabled');
   loadRules();
 }
 
@@ -1795,7 +1797,7 @@ async function toggleRule(id, enabled) {
 async function deleteRule(id, name) {
   if (!confirm(`Delete rule "${name}"? This is a soft delete — restore later via D1 if needed.`)) return;
   await fetch(`${API_BASE}/api/admin/rules/${id}`, { method: 'DELETE' });
-  toast('Rule deleted');
+  showToast('Rule deleted');
   loadRules();
 }
 
@@ -1818,7 +1820,7 @@ async function openRuleModal(id) {
   if (id) {
     const res = await fetch(`${API_BASE}/api/admin/rules`).then(r => r.json());
     const rule = (res.rules || []).find(r => r.id === id);
-    if (!rule) { toast('Rule not found'); return; }
+    if (!rule) { showToast('Rule not found'); return; }
     editingRule = rule;
     document.getElementById('r-id').value = rule.id;
     document.getElementById('r-name').value = rule.name;
@@ -1942,23 +1944,23 @@ async function saveRule() {
     brand_keys:   selectedBrandKeys,
     notes:        document.getElementById('r-notes').value.trim() || null,
   };
-  if (!payload.name) return toast('Name required');
-  if (!payload.brand_keys.length) return toast('Pick at least one publisher');
+  if (!payload.name) return showToast('Name required');
+  if (!payload.brand_keys.length) return showToast('Pick at least one publisher');
 
   const url = id ? `${API_BASE}/api/admin/rules/${id}` : `${API_BASE}/api/admin/rules`;
   const method = id ? 'PATCH' : 'POST';
   const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
   const data = await res.json();
-  if (!res.ok) return toast(data.error || 'Save failed');
+  if (!res.ok) return showToast(data.error || 'Save failed');
   closeModal('ruleModal');
-  toast(id ? 'Rule updated' : 'Rule created');
+  showToast(id ? 'Rule updated' : 'Rule created');
   loadRules();
 }
 
 // ── Test panel ──
 async function runRuleTest() {
   const domain = document.getElementById('rules-test-domain').value.trim();
-  if (!domain) return toast('Enter a domain');
+  if (!domain) return showToast('Enter a domain');
   const out = document.getElementById('rules-test-output');
   out.innerHTML = `<div style="padding:12px;color:var(--muted);">Running…</div>`;
   try {
